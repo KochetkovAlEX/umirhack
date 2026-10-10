@@ -62,8 +62,8 @@ def detect_signature(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) ->
     if anchor is not None:
         x1, y1, x2, y2 = anchor_bbox(anchor, spec.anchor or "подпись")
         lh = max(10, y2 - y1)
-        # зона справа от метки: до ~62% ширины страницы (печать правее), по высоте 1.5 строки вверх и 0.6 вниз
-        roi = _clip((x2 + 5, y1 - int(1.5 * lh), min(W, x1 + int(0.62 * W)), y2 + int(0.6 * lh)), W, H)
+        # зона справа от метки: до ~55% ширины страницы (печать правее), по высоте 1.5 строки вверх и 0.6 вниз
+        roi = _clip((x2 + 5, y1 - int(1.5 * lh), min(W, x1 + int(0.55 * W)), y2 + int(0.6 * lh)), W, H)
     else:
         roi = _clip((0, int(H * 0.62), int(W * 0.65), int(H * 0.9)), W, H)
     rx1, ry1, rx2, ry2 = roi
@@ -94,9 +94,9 @@ def detect_signature(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) ->
     bw, bh = bx2 - bx1, by2 - by1
     roi_h = ry2 - ry1
     ink_ratio = area / max(1, bw * bh)
-    # признаки подписи: ширина заметная, высота > четверти ROI, «рыхлость» (не сплошной блок)
-    min_h = cfg.get("min_height_ratio", 0.25) * roi_h
-    ok = bw > 0.04 * W and bh > min(min_h, 0.6 * roi_h) and bh > 8 and 0.03 < ink_ratio < 0.6 and area > cfg.get(
+    # признаки подписи: заметная ширина, высота больше толщины линии, «рыхлость» (не сплошной блок)
+    min_h = max(10, cfg.get("min_height_ratio", 0.12) * roi_h)
+    ok = bw > 0.04 * W and bh >= min_h and 0.02 < ink_ratio < 0.7 and area > cfg.get(
         "min_ink_ratio", 0.012) * (rx2 - rx1) * roi_h * 0.3
     score = float(min(1.0, (bw / (0.1 * W)) * 0.4 + (bh / max(1, min_h)) * 0.3 + (0.3 if ok else 0)))
     bbox = (rx1 + bx1, ry1 + by1, rx1 + bx2, ry1 + by2) if ok else None

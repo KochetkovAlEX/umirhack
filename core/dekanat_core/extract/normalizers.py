@@ -114,8 +114,8 @@ def parse_date(raw: str) -> Optional[str]:
             r = _valid(y_i, int(mo), int(d))
             if r:
                 return r
-    # «1 сентября 2026», «01 сент. 2026»
-    m = re.search(r"([\dOОoоЗзбIl|]{1,2})\s+([А-Яа-яA-Za-zё]{3,})\.?\s+([\dOОoоЗзбIl|SsBВZ]{4})", s)
+    # «1 сентября 2026», «01 сент. 2026», а также слипшиеся от OCR «05 июня2026»
+    m = re.search(r"([\dOОoоЗзбIl|]{1,2})\s*([А-Яа-яA-Za-zё]{3,}?)\.?\s*([\dOОoоЗзбIl|SsBВZ]{4})(?!\d)", s)
     if m:
         d = fix_digits(m.group(1))
         y = fix_digits(m.group(3))

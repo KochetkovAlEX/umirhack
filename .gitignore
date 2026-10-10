@@ -13,3 +13,12 @@ backend/static/frontend/
 report.json
 bench_out/
 models/
+data/synth/
+bench_out/
+bench_report.json
+results_open_*.json
+results_synth.json
+scripts/dev/*.txt
+scripts/dev/*.png
+scripts/dev/*.json
+scripts/dev/*.log

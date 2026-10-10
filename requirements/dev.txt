@@ -1,0 +1,4 @@
+-r backend.txt
+-r bot.txt
+pytest>=8
+ruff>=0.4

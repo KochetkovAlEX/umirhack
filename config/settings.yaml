@@ -23,7 +23,7 @@ preprocess:
 marks:
   signature:
     min_ink_ratio: 0.012   # доля «чернильных» пикселей в ROI
-    min_height_ratio: 0.25 # вертикальный разброс чернил относительно высоты ROI
+    min_height_ratio: 0.12 # вертикальный разброс чернил относительно высоты ROI (минимум 10 px)
   seal:
     min_blue_ratio: 0.008
     min_radius_ratio: 0.03 # относительно ширины страницы
