@@ -4,10 +4,12 @@ from __future__ import annotations
 import hashlib
 import io
 import logging
+import os
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 from django.core.files.base import ContentFile
-from django.db import transaction
+from django.db import connection, transaction
 from PIL import Image, ImageDraw
 
 from dekanat_core import pipeline
@@ -57,47 +59,84 @@ def _jpeg_bytes(img: Image.Image, quality: int = 85) -> bytes:
     return buf.getvalue()
 
 
-@transaction.atomic
+_executor = ThreadPoolExecutor(max_workers=int(os.environ.get("DEKANAT_WORKERS", "1")), thread_name_prefix="ocr")
+
+
+def _fail(doc: UploadedDocument, message: str) -> None:
+    doc.status, doc.error = UploadedDocument.Status.ERROR, message
+    doc.save(update_fields=["status", "error"])
+
+
+def run_processing(doc_id, data: bytes, filename: str, doc_type: str) -> None:
+    """Собственно OCR/извлечение; выполняется в рабочем потоке или синхронно."""
+    doc = UploadedDocument.objects.get(pk=doc_id)
+    try:
+        result, ctx = pipeline.process_document(data, filename, None if doc_type in ("", "auto", None) else doc_type,
+                                                first_page_only=False)
+    except (MultiPageError, UnsupportedFileError, KeyError) as exc:
+        _fail(doc, str(exc.args[0] if exc.args else exc))
+        return
+    except Exception as exc:  # pragma: no cover
+        log.exception("Ошибка обработки %s", doc.id)
+        _fail(doc, f"Не удалось обработать документ: {exc}")
+        return
+    with transaction.atomic():
+        pr = ProcessingResult(document=doc, result=result.to_dict(), transform=np.asarray(ctx.matrix).tolist(),
+                              original_size=list(ctx.original_rgb.shape[1::-1]))
+        pr.normalized_image.save(f"{doc.id}/normalized.png", ContentFile(_png_bytes(ctx.normalized_rgb)), save=False)
+        pr.preview_image.save(f"{doc.id}/preview.jpg", ContentFile(_jpeg_preview(ctx.normalized_rgb)), save=False)
+        pr.original_preview.save(f"{doc.id}/original_preview.jpg", ContentFile(_jpeg_preview(ctx.original_rgb)), save=False)
+        pr.save()
+        doc.doc_type, doc.type_confidence = result.doc_type, result.type_confidence
+        doc.status, doc.timings = UploadedDocument.Status.DONE, result.timings
+        doc.save()
+    # вопрос/проверка, заданные вместе с загрузкой
+    doc = UploadedDocument.objects.select_related("result").get(pk=doc_id)
+    if doc.pending_question:
+        ask(doc, doc.pending_question)
+    elif doc.pending_check:
+        check(doc)
+
+
+def _worker(doc_id, data, filename, doc_type):
+    try:
+        run_processing(doc_id, data, filename, doc_type)
+    except Exception:  # pragma: no cover
+        log.exception("Фоновая обработка %s завершилась ошибкой", doc_id)
+    finally:
+        connection.close()
+
+
+def _submit(doc_id, data, filename, doc_type) -> None:
+    from django.conf import settings
+
+    # В тестах (in-memory SQLite) отдельный поток не видит тестовую БД — выполняем в том же потоке.
+    if getattr(settings, "DEKANAT_INLINE_WORKERS", False):
+        run_processing(doc_id, data, filename, doc_type)
+        return
+    _executor.submit(_worker, doc_id, data, filename, doc_type)
+
+
 def process_upload(data: bytes, filename: str, doc_type: str = "auto", *, source: str = "web",
-                   telegram_user_id: str = "") -> UploadedDocument:
+                   telegram_user_id: str = "", question: str = "", check: bool = False,
+                   wait: bool = True) -> UploadedDocument:
+    """Создать документ и обработать: синхронно (wait=True) или в фоне (статус processing -> done/error)."""
     fmt = sniff_format(data)
     if fmt is None:
         raise ProcessingError("Поддерживаются JPG, PNG и одностраничный PDF")
     doc = UploadedDocument(original_name=filename[:255], mime=MIME.get(fmt, "application/octet-stream"),
                            size=len(data), sha256=hashlib.sha256(data).hexdigest(),
-                           selected_type=doc_type or "auto", source=source, telegram_user_id=telegram_user_id)
+                           selected_type=doc_type or "auto", source=source, telegram_user_id=telegram_user_id,
+                           pending_question=(question or "").strip(), pending_check=bool(check))
     doc.file.save(filename or f"document.{fmt}", ContentFile(data), save=False)
     doc.save()
-    try:
-        result, ctx = pipeline.process_document(data, filename, None if doc_type in ("", "auto", None) else doc_type,
-                                                first_page_only=False)
-    except MultiPageError as exc:
-        doc.status, doc.error = UploadedDocument.Status.ERROR, str(exc)
-        doc.save()
-        raise ProcessingError(str(exc)) from exc
-    except UnsupportedFileError as exc:
-        doc.status, doc.error = UploadedDocument.Status.ERROR, str(exc)
-        doc.save()
-        raise ProcessingError(str(exc)) from exc
-    except KeyError as exc:
-        doc.status, doc.error = UploadedDocument.Status.ERROR, str(exc)
-        doc.save()
-        raise ProcessingError(str(exc)) from exc
-    except Exception as exc:  # pragma: no cover
-        log.exception("Ошибка обработки %s", doc.id)
-        doc.status, doc.error = UploadedDocument.Status.ERROR, f"Не удалось обработать документ: {exc}"
-        doc.save()
-        raise ProcessingError(doc.error) from exc
-
-    pr = ProcessingResult(document=doc, result=result.to_dict(), transform=np.asarray(ctx.matrix).tolist(),
-                          original_size=list(ctx.original_rgb.shape[1::-1]))
-    pr.normalized_image.save(f"{doc.id}/normalized.png", ContentFile(_png_bytes(ctx.normalized_rgb)), save=False)
-    pr.preview_image.save(f"{doc.id}/preview.jpg", ContentFile(_jpeg_preview(ctx.normalized_rgb)), save=False)
-    pr.original_preview.save(f"{doc.id}/original_preview.jpg", ContentFile(_jpeg_preview(ctx.original_rgb)), save=False)
-    pr.save()
-    doc.doc_type, doc.type_confidence = result.doc_type, result.type_confidence
-    doc.status, doc.timings = UploadedDocument.Status.DONE, result.timings
-    doc.save()
+    if wait:
+        run_processing(doc.pk, data, filename, doc_type)
+        doc = UploadedDocument.objects.get(pk=doc.pk)
+        if doc.status == UploadedDocument.Status.ERROR:
+            raise ProcessingError(doc.error)
+        return doc
+    _submit(doc.pk, data, filename, doc_type)
     return doc
 
 

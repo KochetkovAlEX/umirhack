@@ -57,21 +57,25 @@ class DocumentListCreateView(APIView):
         ser.is_valid(raise_exception=True)
         f = ser.validated_data["file"]
         data = f.read()
+        q = (ser.validated_data.get("question") or "").strip()
+        check = bool(ser.validated_data.get("check"))
+        # async=1: ответить сразу (202, status=processing), обработка в фоне — для медленных каналов/туннелей
+        wait = str(request.data.get("async", "")).lower() not in ("1", "true", "yes")
         try:
             doc = services.process_upload(data, f.name, ser.validated_data.get("doc_type") or "auto",
                                           source=ser.validated_data.get("source", "web"),
-                                          telegram_user_id=ser.validated_data.get("telegram_user_id", ""))
+                                          telegram_user_id=ser.validated_data.get("telegram_user_id", ""),
+                                          question=q, check=check, wait=wait)
         except services.ProcessingError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-        answer = None
-        q = (ser.validated_data.get("question") or "").strip()
-        if q:
-            answer = services.ask(doc, q)
-        elif ser.validated_data.get("check"):
-            answer = services.check(doc)
+        if not wait:
+            payload = DocumentSerializer(doc, context={"request": request}).data
+            payload["answer"] = None
+            return Response(payload, status=status.HTTP_202_ACCEPTED)
         doc = _doc(doc.pk)
         payload = DocumentSerializer(doc, context={"request": request}).data
-        payload["answer"] = QuestionAnswerSerializer(answer).data if answer else None
+        last = doc.questions.order_by("-created_at").first() if (q or check) else None
+        payload["answer"] = QuestionAnswerSerializer(last).data if last else None
         return Response(payload, status=status.HTTP_201_CREATED)
 
 

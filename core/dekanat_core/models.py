@@ -97,6 +97,7 @@ class DocumentResult:
     timings: dict = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     type_candidates: list[dict] = field(default_factory=list)
+    type_mismatch: Optional[dict] = None     # {"detected", "detected_title", "score"} если выбран не тот тип
 
     def fields_plain(self) -> dict[str, Any]:
         """Поля в формате results.json."""
@@ -119,6 +120,7 @@ class DocumentResult:
                        for l in d.get("ocr_lines", [])],
             image_size=tuple(d.get("image_size", (0, 0))), quality=d.get("quality", {}), timings=d.get("timings", {}),
             warnings=list(d.get("warnings", [])), type_candidates=list(d.get("type_candidates", [])),
+            type_mismatch=d.get("type_mismatch"),
         )
 
     def to_dict(self) -> dict:
@@ -136,4 +138,5 @@ class DocumentResult:
             "quality": self.quality,
             "timings": self.timings,
             "warnings": self.warnings,
+            "type_mismatch": self.type_mismatch,
         })

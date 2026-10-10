@@ -86,13 +86,23 @@ def build_result(ctx: ProcessingContext, doc_type: Optional[str], meta: dict) ->
     warnings = list(meta.get("warnings", []))
     if auto and conf < 0.5:
         warnings.append("Тип документа определён с низкой уверенностью — проверьте выбор типа.")
+    type_mismatch = None
+    if not auto and candidates:
+        # тип выбран вручную, но документ явно похож на другой тип (например, справка об обучении
+        # загружена как заявление на отпуск): сообщаем, не меняя выбор пользователя
+        best = candidates[0]
+        chosen = next((c for c in candidates if c["key"] == cfg.key), None)
+        if best["key"] != cfg.key and best["score"] >= 0.5 and (chosen is None or best["score"] >= 2 * max(0.05, chosen["score"])):
+            type_mismatch = {"detected": best["key"], "detected_title": best["title"], "score": best["score"]}
+            warnings.append(f"Похоже, выбран неправильный тип документа: загруженный документ больше похож на "
+                            f"«{best['title']}». Проверьте тип или смените его.")
     h, w = ctx.normalized_rgb.shape[:2]
     return DocumentResult(
         doc_type=cfg.key, doc_type_title=cfg.title, type_confidence=conf, type_auto=auto,
         fields=fields, validation=validation, ocr_text=full_text(ctx.lines),
         ocr_lines=[l for ln in ctx.lines for l in ln.parts],
         image_size=(w, h), quality=dict(meta.get("quality", {}), steps=meta.get("steps", []), ocr=meta.get("ocr", {})),
-        timings=timings, warnings=warnings, type_candidates=candidates,
+        timings=timings, warnings=warnings, type_candidates=candidates, type_mismatch=type_mismatch,
     )
 
 

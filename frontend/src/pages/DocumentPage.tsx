@@ -22,7 +22,12 @@ export default function DocumentPage() {
   const [history, setHistory] = useState<QA[]>([])
   const [variant, setVariant] = useState<'normalized' | 'original'>('normalized')
 
-  const doc = useQuery({ queryKey: ['doc', id], queryFn: () => api.get(id) })
+  // пока документ обрабатывается в фоне — опрашиваем статус
+  const doc = useQuery({
+    queryKey: ['doc', id],
+    queryFn: () => api.get(id),
+    refetchInterval: (q) => (q.state.data?.status === 'processing' ? 1200 : false),
+  })
   const types = useQuery({ queryKey: ['doc-types'], queryFn: api.docTypes })
 
   useEffect(() => {
@@ -30,6 +35,8 @@ export default function DocumentPage() {
       const initial = (location.state as { answer?: QA } | null)?.answer
       const qs = doc.data.questions ?? []
       setHistory(initial && !qs.find((q) => q.id === initial.id) ? [...qs, initial] : qs)
+      const last = qs[qs.length - 1]
+      if (last?.field_key) setHighlight(last.field_key)
     }
   }, [doc.data, location.state])
 
@@ -63,6 +70,17 @@ export default function DocumentPage() {
   const fields = useMemo(() => (result ? Object.values(result.fields) : []), [result])
 
   if (doc.isLoading) return <div className="flex items-center gap-2 text-ink-600"><Loader2 className="animate-spin" /> Загрузка…</div>
+  if (doc.data?.status === 'processing')
+    return (
+      <div className="card p-6 max-w-xl mx-auto text-center">
+        <Loader2 className="animate-spin mx-auto text-brand-500" size={36} />
+        <div className="mt-3 font-semibold">Обрабатываем документ…</div>
+        <div className="text-sm text-ink-600 mt-1">
+          Выравниваем снимок, распознаём текст, извлекаем поля и проверяем по Положению. Обычно 5–10 секунд.
+        </div>
+        <div className="text-xs text-ink-500 mt-3 truncate">{doc.data.original_name}</div>
+      </div>
+    )
   if (doc.error || !doc.data) return <div className="card p-5 text-red-700">Документ не найден: {(doc.error as Error)?.message}</div>
   if (doc.data.status === 'error' || !result)
     return (
@@ -128,7 +146,18 @@ export default function DocumentPage() {
               {retype.isPending && <Loader2 className="animate-spin" size={16} />}
             </div>
           </div>
-          {result.warnings?.map((w) => (
+          {result.type_mismatch && (
+            <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm">
+              <div className="font-semibold text-amber-800">Похоже, выбран неправильный тип документа</div>
+              <div className="text-amber-800/90 mt-0.5">
+                Загруженный документ больше похож на «{result.type_mismatch.detected_title}», поэтому большинство полей не найдено.
+              </div>
+              <button className="btn-primary mt-2 !py-1.5 text-xs" disabled={retype.isPending} onClick={() => retype.mutate(result.type_mismatch!.detected)}>
+                Сменить тип на «{result.type_mismatch.detected_title}»
+              </button>
+            </div>
+          )}
+          {result.warnings?.filter((w) => !w.startsWith('Похоже, выбран')).map((w) => (
             <div key={w} className="mt-2 rounded-lg bg-amber-50 text-amber-800 text-xs p-2">{w}</div>
           ))}
         </div>

@@ -37,11 +37,14 @@ async def rules() -> dict:
         return await _handle(await c.get(f"{API_BASE}/rules"))
 
 
-async def upload(data: bytes, filename: str, doc_type: str, question: str = "", *, user_id: str = "") -> dict:
+async def upload(data: bytes, filename: str, doc_type: str, question: str = "", *, user_id: str = "",
+                 wait: bool = True) -> dict:
     async with httpx.AsyncClient(timeout=TIMEOUT, trust_env=False) as c:
         form = {"doc_type": doc_type, "source": "telegram", "telegram_user_id": user_id}
         if question:
             form["question"] = question
+        if not wait:
+            form["async"] = "1"
         r = await c.post(f"{API_BASE}/documents", data=form, files={"file": (filename, data)})
         return await _handle(r)
 

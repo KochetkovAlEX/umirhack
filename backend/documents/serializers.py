@@ -34,7 +34,8 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = UploadedDocument
         fields = ["id", "original_name", "mime", "size", "selected_type", "doc_type", "type_confidence",
-                  "status", "error", "source", "timings", "created_at", "result", "questions", "images"]
+                  "status", "error", "source", "timings", "pending_question", "pending_check", "created_at",
+                  "result", "questions", "images"]
 
     def get_result(self, obj):
         if obj.status != UploadedDocument.Status.DONE or not hasattr(obj, "result"):

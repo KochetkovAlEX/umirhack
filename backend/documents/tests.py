@@ -7,7 +7,7 @@ from django.test import TestCase, override_settings
 DATA = Path(__file__).resolve().parents[2] / "data"
 
 
-@override_settings(DEKANAT_WARMUP=False)
+@override_settings(DEKANAT_WARMUP=False, DEKANAT_INLINE_WORKERS=True)
 class ApiTests(TestCase):
     def _upload(self, name, **form):
         with open(DATA / "documents" / name, "rb") as f:
@@ -37,13 +37,39 @@ class ApiTests(TestCase):
         self.assertEqual((a["value"], a["sources"]), ("сотрудник деканата", ["rule:1.3"]))
         c = self.client.post(f"/api/v1/documents/{did}/check").json()
         self.assertEqual(c["value"], "missing_fields")
-        self.assertEqual(self.client.get(f"/api/v1/documents/{did}/fields/student_name/crop.png")["Content-Type"], "image/png")
+        self.assertEqual(self.client.get(f"/api/v1/documents/{did}/fields/student_name/crop.png")["Content-Type"], "image/jpeg")
+        self.assertEqual(self.client.get(f"/api/v1/documents/{did}/image?variant=preview")["Content-Type"], "image/jpeg")
         self.assertEqual(self.client.get(f"/api/v1/documents/{did}/annotated.png").status_code, 200)
         self.assertEqual(len(self.client.get(f"/api/v1/documents/{did}/boxes").json()), 10)
         p = self.client.patch(f"/api/v1/documents/{did}", json.dumps({"doc_type": "internship_certificate"}), content_type="application/json").json()
         self.assertEqual(p["doc_type"], "internship_certificate")
         e = self.client.get(f"/api/v1/documents/{did}/export.json").json()
         self.assertEqual(set(e), {"document_id", "document_type", "fields", "validation", "answers"})
+
+    def test_async_mode_with_question(self):
+        import time
+
+        r = self._upload("open-002.png", doc_type="auto", question="Какова дата выдачи?", **{"async": "1"})
+        self.assertEqual(r.status_code, 202)
+        did = r.json()["id"]
+        self.assertEqual(r.json()["status"], "processing")
+        for _ in range(60):
+            d = self.client.get(f"/api/v1/documents/{did}").json()
+            if d["status"] != "processing":
+                break
+            time.sleep(0.5)
+        self.assertEqual(d["status"], "done", d.get("error"))
+        self.assertEqual(d["doc_type"], "study_certificate")
+        self.assertEqual(len(d["questions"]), 1)
+        self.assertFalse(d["questions"][0]["answerable"])  # дата выдачи отсутствует в open-002
+
+    def test_wrong_type_is_reported(self):
+        r = self._upload("open-001.png", doc_type="academic_leave_application")
+        self.assertEqual(r.status_code, 201)
+        mm = r.json()["result"]["type_mismatch"]
+        self.assertIsNotNone(mm)
+        self.assertEqual(mm["detected"], "study_certificate")
+        self.assertTrue(any("неправильный тип" in w for w in r.json()["result"]["warnings"]))
 
     def test_pdf_with_check(self):
         r = self._upload("open-013.pdf", doc_type="academic_leave_application", check="true")

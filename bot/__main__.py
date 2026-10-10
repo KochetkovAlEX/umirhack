@@ -293,9 +293,18 @@ async def on_type_chosen(cq: CallbackQuery, state: FSMContext, bot: Bot):
     await cq.message.edit_reply_markup(reply_markup=None)
     status = await cq.message.answer("⏳ Распознаю документ…")
     await bot.send_chat_action(cq.message.chat.id, ChatAction.TYPING)
+    question = data.get("pending_question", "")
     try:
-        doc = await api.upload(data["pending_file"], data["pending_name"], doc_type, data.get("pending_question", ""),
-                               user_id=str(cq.from_user.id))
+        # асинхронно: API отвечает сразу, дальше опрашиваем статус (туннели обрывают долгие запросы)
+        doc = await api.upload(data["pending_file"], data["pending_name"], doc_type, question,
+                               user_id=str(cq.from_user.id), wait=False)
+        for i in range(90):
+            if doc.get("status") != "processing":
+                break
+            await asyncio.sleep(1.0)
+            if i in (6, 15, 30):
+                await status.edit_text("⏳ Распознаю документ… " + "•" * (i // 6))
+            doc = await api.get(doc["id"])
     except api.ApiError as exc:
         await status.edit_text(f"❌ {exc}")
         await state.clear()
@@ -305,13 +314,34 @@ async def on_type_chosen(cq: CallbackQuery, state: FSMContext, bot: Bot):
         await status.edit_text(f"❌ Сервис недоступен: {exc}")
         await state.clear()
         return
+    if doc.get("status") == "error":
+        await status.edit_text(f"❌ {doc.get('error') or 'Не удалось обработать документ'}")
+        await state.clear()
+        return
+    if doc.get("status") != "done" or not doc.get("result"):
+        await status.edit_text("❌ Обработка занимает слишком много времени. Попробуйте ещё раз позже.")
+        await state.clear()
+        return
     await status.delete()
     await state.set_state(Flow.ready)
     await state.update_data(doc_id=doc["id"], fields=doc["result"]["fields"], pending_file=None)
     await cq.message.answer(texts.format_document(doc), reply_markup=main_kb())
-    if doc.get("answer"):
-        await _send_answer(cq.message, doc["answer"], doc["result"]["fields"], doc["id"])
+    await _warn_type_mismatch(cq.message, doc)
+    if question and doc.get("questions"):
+        await _send_answer(cq.message, doc["questions"][-1], doc["result"]["fields"], doc["id"])
     await cq.message.answer("Задайте вопрос о документе или выберите действие:", reply_markup=await quick_kb(doc["id"]))
+
+
+async def _warn_type_mismatch(m: Message, doc: dict):
+    """Выбран не тот тип (например, справка об обучении загружена как заявление): предлагаем сменить."""
+    mm = (doc.get("result") or {}).get("type_mismatch")
+    if not mm:
+        return
+    kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
+        text=f"🔁 Сменить тип на «{mm['detected_title']}»", callback_data=f"retype:{mm['detected']}")]])
+    await m.answer("⚠️ <b>Похоже, выбран неправильный тип документа.</b>\n"
+                   f"Загруженный документ больше похож на «{mm['detected_title']}», поэтому большинство полей "
+                   "не найдено. Сменить тип?", reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("retype:"))

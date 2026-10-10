@@ -33,6 +33,8 @@ class UploadedDocument(models.Model):
     source = models.CharField(max_length=16, choices=Source.choices, default=Source.WEB)
     telegram_user_id = models.CharField(max_length=32, blank=True, db_index=True)
     timings = models.JSONField(default=dict, blank=True)
+    pending_question = models.TextField(blank=True)      # вопрос, заданный вместе с загрузкой (асинхронный режим)
+    pending_check = models.BooleanField(default=False)   # «проверить без вопроса» вместе с загрузкой
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

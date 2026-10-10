@@ -34,6 +34,7 @@ export interface DocResult {
   quality: Record<string, unknown>
   timings: Record<string, number>
   warnings: string[]
+  type_mismatch: { detected: string; detected_title: string; score: number } | null
   transform: number[][]
   original_size: [number, number]
 }
@@ -60,6 +61,8 @@ export interface Doc {
   type_confidence: number
   status: 'processing' | 'done' | 'error'
   error: string
+  pending_question: string
+  pending_check: boolean
   source: string
   timings: Record<string, number>
   created_at: string
@@ -102,12 +105,15 @@ export const api = {
   health: () => fetch(`${BASE}/health`).then((r) => handle<{ status: string; engines: Record<string, string> }>(r)),
   docTypes: () => fetch(`${BASE}/doc-types`).then((r) => handle<DocType[]>(r)),
   rules: () => fetch(`${BASE}/rules`).then((r) => handle<Rules>(r)),
+  // async=1: сервер отвечает сразу (202, status=processing) — важно для медленных каналов и туннелей,
+  // которые обрывают запросы дольше нескольких секунд; дальше страница документа опрашивает статус.
   upload: (file: File, docType: string, question: string, check: boolean) => {
     const fd = new FormData()
     fd.append('file', file)
     fd.append('doc_type', docType)
     if (question) fd.append('question', question)
     if (check) fd.append('check', 'true')
+    fd.append('async', '1')
     return fetch(`${BASE}/documents`, { method: 'POST', body: fd }).then((r) => handle<Doc>(r))
   },
   get: (id: string) => fetch(`${BASE}/documents/${id}`).then((r) => handle<Doc>(r)),
