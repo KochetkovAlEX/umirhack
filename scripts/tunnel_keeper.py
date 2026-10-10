@@ -123,8 +123,11 @@ def publish(url: str, previous: str = "") -> None:
     notify_chats(url, previous)
 
 
-def run(port: int, provider: str = "localhost.run") -> None:
+def run(port: int, provider: str = "localhost.run", name: str = "") -> None:
     args, pattern = PROVIDERS[provider]
+    if name and provider == "serveo":
+        # постоянное имя (SSH-ключ должен быть зарегистрирован на console.serveo.net)
+        args = [a.replace("80:127.0.0.1", f"{name}:80:127.0.0.1") for a in args]
     url_re = re.compile(pattern)
     cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=3",
            "-o", "ExitOnForwardFailure=yes", *[a.format(port=port) for a in args]]
@@ -151,8 +154,9 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--provider", choices=list(PROVIDERS), default=os.environ.get("TUNNEL_PROVIDER", "localhost.run"))
+    p.add_argument("--name", default=os.environ.get("TUNNEL_NAME", ""), help="постоянный поддомен serveo (после регистрации ключа)")
     a = p.parse_args()
     try:
-        run(a.port, a.provider)
+        run(a.port, a.provider, a.name)
     except KeyboardInterrupt:
         sys.exit(0)
