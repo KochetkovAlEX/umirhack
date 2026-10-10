@@ -15,6 +15,6 @@ switch ($Task) {
   "serve"    { Push-Location backend; & "..\.venv\Scripts\python.exe" manage.py migrate; & "..\.venv\Scripts\python.exe" -m waitress --listen=0.0.0.0:8000 --threads=4 dekanat.wsgi:application; Pop-Location }
   "frontend" { Push-Location frontend; npm run dev; Pop-Location }
   "bot"      { & $py -m bot }
-  "tunnel"   { & $py scripts	unnel_keeper.py }
+  "tunnel"   { & $py scripts\tunnel_keeper.py }
   default    { Write-Host "Команды: venv, models, predict, eval, test, test-slow, bench, synth, build-frontend, backend, serve, frontend, bot, tunnel" }
 }
