@@ -25,7 +25,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENV = ROOT / ".env"
 URL_FILE = ROOT / "scripts" / "dev" / "webapp_url.txt"
-URL_RE = re.compile(r"https://[a-z0-9]+\.lhr\.life")
+PROVIDERS = {
+    # имя: (аргументы ssh, регулярное выражение публичного адреса)
+    "localhost.run": (["-R", "80:127.0.0.1:{port}", "nokey@localhost.run"], r"https://[a-z0-9]+\.lhr\.life"),
+    # serveo: без ограничений по времени, но на бесплатном тарифе показывает страницу «Continue to Site» один раз
+    "serveo": (["-R", "80:127.0.0.1:{port}", "serveo.net"], r"https://[a-z0-9-]+\.serveousercontent\.com"),
+}
 
 
 def read_env(key: str) -> str:
@@ -66,17 +71,63 @@ def set_menu_button(url: str) -> None:
         print(f"[keeper] не удалось обновить кнопку меню: {exc}", flush=True)
 
 
-def publish(url: str) -> None:
+def known_chats() -> list[int]:
+    """Чаты, которые пользовались ботом (telegram_user_id из БД бэкенда)."""
+    db = ROOT / "backend" / "db.sqlite3"
+    if not db.exists():
+        return []
+    import sqlite3
+
+    try:
+        rows = sqlite3.connect(db).execute(
+            "select distinct telegram_user_id from documents_uploadeddocument where telegram_user_id != ''").fetchall()
+        return [int(r[0]) for r in rows if str(r[0]).isdigit() and int(r[0]) > 1000]
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def notify_chats(url: str, previous: str) -> None:
+    """Прислать свежую клавиатуру: кнопка web_app в старой клавиатуре хранит прежний адрес."""
+    token = read_env("BOT_TOKEN")
+    if not token:
+        return
+    keyboard = {
+        "resize_keyboard": True,
+        "keyboard": [
+            [{"text": "✅ Проверить комплектность"}, {"text": "🗂 Карточка полей"}],
+            [{"text": "🖼 Снимок с разметкой"}, {"text": "📝 Распознанный текст"}],
+            [{"text": "📄 Новый документ"}, {"text": "📘 Положение"}],
+            [{"text": "🌐 Открыть приложение", "web_app": {"url": url + "/"}}],
+        ],
+    }
+    text = ("🔄 Адрес веб-приложения обновился. Кнопка «🌐 Открыть приложение» и меню «Приложение» уже ведут на новый адрес."
+            if previous else "🌐 Веб-приложение доступно: кнопка «Открыть приложение» внизу или меню «Приложение».")
+    for chat_id in known_chats():
+        body = json.dumps({"chat_id": chat_id, "text": text, "reply_markup": keyboard,
+                           "disable_notification": True}, ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=body,
+                                     headers={"Content-Type": "application/json; charset=utf-8"})
+        try:
+            urllib.request.urlopen(req, timeout=20).read()
+            print(f"[keeper] клавиатура обновлена в чате {chat_id}", flush=True)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[keeper] чат {chat_id}: {exc}", flush=True)
+
+
+def publish(url: str, previous: str = "") -> None:
     URL_FILE.parent.mkdir(parents=True, exist_ok=True)
     URL_FILE.write_text(url, encoding="utf-8")
     write_env("WEBAPP_URL", url)
     print(f"[keeper] Mini App URL: {url}", flush=True)
     set_menu_button(url)
+    notify_chats(url, previous)
 
 
-def run(port: int) -> None:
+def run(port: int, provider: str = "localhost.run") -> None:
+    args, pattern = PROVIDERS[provider]
+    url_re = re.compile(pattern)
     cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=3",
-           "-o", "ExitOnForwardFailure=yes", "-R", f"80:127.0.0.1:{port}", "nokey@localhost.run"]
+           "-o", "ExitOnForwardFailure=yes", *[a.format(port=port) for a in args]]
     current = ""
     while True:
         print("[keeper] запускаю ssh-туннель...", flush=True)
@@ -84,10 +135,10 @@ def run(port: int) -> None:
                                 errors="ignore", bufsize=1)
         try:
             for line in proc.stdout:  # type: ignore[union-attr]
-                m = URL_RE.search(line)
+                m = url_re.search(line)
                 if m and m.group(0) != current:
-                    current = m.group(0)
-                    publish(current)
+                    previous, current = current, m.group(0)
+                    publish(current, previous or read_env("WEBAPP_URL_PREV"))
         except KeyboardInterrupt:
             proc.terminate()
             return
@@ -99,8 +150,9 @@ def run(port: int) -> None:
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--provider", choices=list(PROVIDERS), default=os.environ.get("TUNNEL_PROVIDER", "localhost.run"))
     a = p.parse_args()
     try:
-        run(a.port)
+        run(a.port, a.provider)
     except KeyboardInterrupt:
         sys.exit(0)
