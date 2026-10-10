@@ -61,13 +61,13 @@ export default function DocumentPage() {
   const result = doc.data?.result
   const fields = useMemo(() => (result ? Object.values(result.fields) : []), [result])
 
-  if (doc.isLoading) return <div className="flex items-center gap-2 text-slate-600"><Loader2 className="animate-spin" /> Загрузка…</div>
+  if (doc.isLoading) return <div className="flex items-center gap-2 text-ink-600"><Loader2 className="animate-spin" /> Загрузка…</div>
   if (doc.error || !doc.data) return <div className="card p-5 text-red-700">Документ не найден: {(doc.error as Error)?.message}</div>
   if (doc.data.status === 'error' || !result)
     return (
       <div className="card p-5">
         <div className="text-red-700 font-medium">Ошибка обработки</div>
-        <div className="text-sm text-slate-600 mt-1">{doc.data.error}</div>
+        <div className="text-sm text-ink-600 mt-1">{doc.data.error}</div>
         <button className="btn-primary mt-4" onClick={() => navigate('/')}><Upload size={16} /> Загрузить другой документ</button>
       </div>
     )
@@ -77,10 +77,10 @@ export default function DocumentPage() {
       {/* ---------- снимок ---------- */}
       <section className="card p-3 lg:sticky lg:top-20 self-start">
         <div className="flex items-center justify-between gap-2 px-1 pb-2">
-          <div className="text-sm text-slate-600 truncate">{doc.data.original_name}</div>
+          <div className="text-sm text-ink-600 truncate">{doc.data.original_name}</div>
           <div className="flex gap-1 text-xs">
-            <button className={`chip ${variant === 'normalized' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300'}`} onClick={() => setVariant('normalized')}>выровненный</button>
-            <button className={`chip ${variant === 'original' ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300'}`} onClick={() => setVariant('original')}>исходный</button>
+            <button className={`chip ${variant === 'normalized' ? 'bg-brand-500 text-white border-brand-500' : 'border-ink-300'}`} onClick={() => setVariant('normalized')}>выровненный</button>
+            <button className={`chip ${variant === 'original' ? 'bg-brand-500 text-white border-brand-500' : 'border-ink-300'}`} onClick={() => setVariant('original')}>исходный</button>
           </div>
         </div>
         <ImageViewer
@@ -92,8 +92,8 @@ export default function DocumentPage() {
           onSelect={setHighlight}
           isPdfOriginal={variant === 'original' && doc.data.mime === 'application/pdf'}
         />
-        <div className="mt-2 flex flex-wrap gap-3 px-1 text-xs text-slate-500">
-          <span><i className="inline-block w-3 h-3 rounded-sm bg-green-500 mr-1 align-middle" />поле найдено</span>
+        <div className="mt-2 flex flex-wrap gap-3 px-1 text-xs text-ink-500">
+          <span><i className="inline-block w-3 h-3 rounded-sm bg-brand-500 mr-1 align-middle" />поле найдено</span>
           <span><i className="inline-block w-3 h-3 rounded-sm bg-red-500 mr-1 align-middle" />не найдено</span>
           <span><i className="inline-block w-3 h-3 rounded-sm bg-blue-600 mr-1 align-middle" />подпись / печать</span>
           <span className="ml-auto">клик по полю — подсветка</span>
@@ -105,7 +105,7 @@ export default function DocumentPage() {
         <div className="card p-4">
           <div className="flex flex-wrap items-center gap-2">
             <div>
-              <div className="text-xs text-slate-500">Тип документа {result.type_auto && '(определён автоматически)'}</div>
+              <div className="text-xs text-ink-500">Тип документа {result.type_auto && '(определён автоматически)'}</div>
               <div className="font-semibold">{result.doc_type_title}</div>
             </div>
             {result.type_auto && (
@@ -135,9 +135,9 @@ export default function DocumentPage() {
         <ValidationCard validation={result.validation} fields={result.fields} onSelect={setHighlight} />
 
         <div className="card">
-          <div className="flex border-b border-slate-200 text-sm">
+          <div className="flex border-b border-ink-200 text-sm">
             {([['answer', 'Ответы'], ['fields', 'Карточка полей'], ['ocr', 'Распознанный текст']] as [Tab, string][]).map(([k, t]) => (
-              <button key={k} onClick={() => setTab(k)} className={`px-4 py-2.5 font-medium ${tab === k ? 'border-b-2 border-orange-500 text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>
+              <button key={k} onClick={() => setTab(k)} className={`px-4 py-2.5 font-medium ${tab === k ? 'border-b-2 border-brand-500 text-ink-900' : 'text-ink-500 hover:text-ink-800'}`}>
                 {t}
               </button>
             ))}
@@ -146,7 +146,7 @@ export default function DocumentPage() {
             {tab === 'answer' && (
               <div className="space-y-3">
                 {history.length === 0 && (
-                  <div className="text-sm text-slate-500">Задайте вопрос о документе или нажмите «Проверить комплектность».</div>
+                  <div className="text-sm text-ink-500">Задайте вопрос о документе или нажмите «Проверить комплектность».</div>
                 )}
                 {history.map((qa) => (
                   <AnswerCard key={qa.id} qa={qa} fields={result.fields} docId={id} onSelect={setHighlight} highlighted={last?.id === qa.id} />
@@ -164,11 +164,11 @@ export default function DocumentPage() {
                   </button>
                 </form>
                 <div className="flex flex-wrap gap-1.5">
-                  <button className="chip border-slate-900 bg-slate-900 text-white" onClick={() => check.mutate()} disabled={check.isPending}>
+                  <button className="chip border-brand-500 bg-brand-500 text-white" onClick={() => check.mutate()} disabled={check.isPending}>
                     <Search size={12} /> Проверить комплектность
                   </button>
                   {SUGGESTED_QUESTIONS.filter((q) => !q.startsWith('Содержит')).map((q) => (
-                    <button key={q} className="chip border-slate-300 bg-white hover:bg-slate-100" onClick={() => ask.mutate(q)}>{q}</button>
+                    <button key={q} className="chip border-ink-300 bg-white hover:bg-ink-100" onClick={() => ask.mutate(q)}>{q}</button>
                   ))}
                 </div>
               </div>
@@ -176,8 +176,8 @@ export default function DocumentPage() {
             {tab === 'fields' && <FieldsTable fields={result.fields} highlight={highlight} onSelect={setHighlight} docId={id} />}
             {tab === 'ocr' && (
               <div>
-                <pre className="whitespace-pre-wrap text-xs leading-5 bg-slate-50 rounded-xl p-3 max-h-96 overflow-auto">{result.ocr_text}</pre>
-                <div className="mt-2 text-xs text-slate-500">
+                <pre className="whitespace-pre-wrap text-xs leading-5 bg-ink-50 rounded-xl p-3 max-h-96 overflow-auto">{result.ocr_text}</pre>
+                <div className="mt-2 text-xs text-ink-500">
                   OCR: {String((result.quality as { ocr?: { engines?: string[] } })?.ocr?.engines?.join(' + ') ?? '')} · предобработка:{' '}
                   {String(((result.quality as { steps?: string[] })?.steps ?? []).join(', ') || 'не требовалась')} · время:{' '}
                   {Object.entries(result.timings).map(([k, v]) => `${k} ${v}s`).join(', ')}

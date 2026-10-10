@@ -27,14 +27,14 @@ export default function AboutPage() {
         <li>Поддерживается одна страница; многостраничные PDF, рукописный текст — вне обязательной версии 1.0.</li>
       </ul>
       <h2 className="font-semibold text-base">Состояние</h2>
-      <div className="text-slate-600">
+      <div className="text-ink-600">
         {health.data ? (
           <>API: {health.data.status}; движки OCR: {Object.entries(health.data.engines).map(([k, v]) => `${k} — ${v}`).join(', ')}</>
         ) : (
           'проверка…'
         )}
       </div>
-      <p className="text-xs text-slate-500">Интерфейс также доступен в Telegram-боте — тот же бэкенд, без OCR на стороне бота.</p>
+      <p className="text-xs text-ink-500">Интерфейс также доступен в Telegram-боте — тот же бэкенд, без OCR на стороне бота.</p>
     </div>
   )
 }

@@ -33,14 +33,14 @@ function project(bbox: [number, number, number, number], inv: number[][] | null)
     .join(' ')
 }
 
-const color = (f: FieldValue) => (f.kind === 'mark' ? (f.found ? '#2563eb' : '#dc2626') : f.found ? '#16a34a' : '#dc2626')
+const color = (f: FieldValue) => (f.kind === 'mark' ? (f.found ? '#2563eb' : '#dc2626') : f.found ? '#50b848' : '#dc2626')
 
 export default function ImageViewer({ src, size, fields, transform, highlight, onSelect, isPdfOriginal }: Props) {
   const [w, h] = size
   const inv = transform ? invert3(transform) : null
   if (isPdfOriginal) {
     return (
-      <div className="rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+      <div className="rounded-xl overflow-hidden bg-ink-100 border border-ink-200">
         <object data={src} type="application/pdf" className="w-full h-[70vh]">
           <div className="p-4 text-sm">PDF: <a className="underline" href={src} target="_blank" rel="noreferrer">открыть исходный файл</a></div>
         </object>
@@ -48,7 +48,7 @@ export default function ImageViewer({ src, size, fields, transform, highlight, o
     )
   }
   return (
-    <div className="rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+    <div className="rounded-xl overflow-hidden bg-ink-100 border border-ink-200">
       <TransformWrapper minScale={0.5} maxScale={6} wheel={{ step: 0.15 }} doubleClick={{ mode: 'reset' }}>
         <TransformComponent wrapperClass="!w-full !h-[70vh]" contentClass="!w-full">
           <div className="relative w-full" style={{ aspectRatio: `${w} / ${h}` }}>

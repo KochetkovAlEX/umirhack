@@ -52,7 +52,7 @@ export default function UploadPage() {
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
       <section className="card p-5">
         <h1 className="text-2xl font-bold mb-1">Проверить студенческий документ</h1>
-        <p className="text-sm text-slate-600 mb-4">
+        <p className="text-sm text-ink-600 mb-4">
           Загрузите фото или скан справки/заявления (JPG, PNG, PDF) и задайте вопрос на русском. Сервис распознает текст,
           заполнит карточку полей и ответит со ссылками на поля документа и пункты Положения.
         </p>
@@ -60,7 +60,7 @@ export default function UploadPage() {
         <div
           {...getRootProps()}
           className={`rounded-2xl border-2 border-dashed p-6 text-center transition ${
-            isDragActive ? 'border-orange-400 bg-orange-50' : 'border-slate-300 bg-slate-50'
+            isDragActive ? 'border-brand-400 bg-brand-50' : 'border-ink-300 bg-ink-50'
           }`}
         >
           <input {...getInputProps()} />
@@ -69,7 +69,7 @@ export default function UploadPage() {
               {preview ? (
                 <img src={preview} alt="превью" className="max-h-64 rounded-lg shadow" />
               ) : (
-                <div className="h-24 w-20 rounded-lg bg-white border flex items-center justify-center text-xs text-slate-500">PDF</div>
+                <div className="h-24 w-20 rounded-lg bg-white border flex items-center justify-center text-xs text-ink-500">PDF</div>
               )}
               <div className="text-sm">
                 <b>{file.name}</b> · {(file.size / 1024).toFixed(0)} КБ
@@ -80,8 +80,8 @@ export default function UploadPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 py-4">
-              <FileUp className="text-slate-400" size={40} />
-              <div className="text-sm text-slate-600">Перетащите файл сюда или</div>
+              <FileUp className="text-ink-400" size={40} />
+              <div className="text-sm text-ink-600">Перетащите файл сюда или</div>
               <div className="flex flex-wrap gap-2 justify-center">
                 <button type="button" className="btn-primary" onClick={open}>
                   <FileUp size={16} /> Выбрать файл
@@ -97,7 +97,7 @@ export default function UploadPage() {
                   />
                 </label>
               </div>
-              <div className="text-xs text-slate-500">JPG, PNG или одностраничный PDF, до {MAX_MB} МБ</div>
+              <div className="text-xs text-ink-500">JPG, PNG или одностраничный PDF, до {MAX_MB} МБ</div>
             </div>
           )}
         </div>
@@ -130,7 +130,7 @@ export default function UploadPage() {
             <button
               key={q}
               type="button"
-              className="chip border-slate-300 bg-white hover:bg-slate-100"
+              className="chip border-ink-300 bg-white hover:bg-ink-100"
               onClick={() => setQuestion(q)}
             >
               {q}
@@ -150,7 +150,7 @@ export default function UploadPage() {
           </button>
         </div>
         {mutation.isPending && (
-          <div className="mt-3 text-sm text-slate-600 flex items-center gap-2">
+          <div className="mt-3 text-sm text-ink-600 flex items-center gap-2">
             <Loader2 className="animate-spin" size={14} /> {STEPS[step]} (обычно 3–8 секунд)
           </div>
         )}
@@ -159,7 +159,7 @@ export default function UploadPage() {
       <aside className="space-y-4">
         <div className="card p-5">
           <h2 className="font-semibold mb-2">Как это работает</h2>
-          <ol className="text-sm text-slate-700 space-y-2 list-decimal pl-5">
+          <ol className="text-sm text-ink-700 space-y-2 list-decimal pl-5">
             <li>OCR читает текст на снимке (PaddleOCR / Tesseract, локально).</li>
             <li>Поля раскладываются по карточке выбранного типа; пустые — «не найдено».</li>
             <li>Проверяется наличие подписи и печати как графических отметок (п. 2.3).</li>
@@ -169,15 +169,15 @@ export default function UploadPage() {
         </div>
         <div className="card p-5">
           <h2 className="font-semibold mb-2">Поддерживаемые типы</h2>
-          <ul className="text-sm text-slate-700 space-y-1">
+          <ul className="text-sm text-ink-700 space-y-1">
             {types.data?.map((t) => (
               <li key={t.key} className="flex justify-between gap-2">
                 <span>{t.title}</span>
-                <span className="text-slate-400">раздел {t.rules_section} · {t.fields.length} полей</span>
+                <span className="text-ink-400">раздел {t.rules_section} · {t.fields.length} полей</span>
               </li>
             ))}
           </ul>
-          <p className="text-xs text-slate-500 mt-3">
+          <p className="text-xs text-ink-500 mt-3">
             Новый тип добавляется YAML-файлом в <code>config/doc_types/</code> без изменения кода.
           </p>
         </div>

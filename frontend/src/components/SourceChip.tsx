@@ -28,14 +28,14 @@ export default function SourceChip({ source, fields, onSelect }: Props) {
   const text = rules.data?.sections.flatMap((s) => s.rules).find((r) => r.id === rid)?.text
   return (
     <span className="relative inline-block">
-      <button type="button" className="chip border-sky-300 bg-sky-50 text-sky-900 hover:bg-sky-100" onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="chip border-sun-400 bg-sun-50 text-sun-900 hover:bg-sun-100" onClick={() => setOpen((o) => !o)}>
         <BookOpen size={12} /> п. {rid} Положения
       </button>
       {open && (
-        <div className="absolute z-30 left-0 top-full mt-1 w-80 max-w-[85vw] rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-lg">
+        <div className="absolute z-30 left-0 top-full mt-1 w-80 max-w-[85vw] rounded-xl border border-ink-200 bg-white p-3 text-xs shadow-lg">
           <div className="font-semibold mb-1">Пункт {rid}</div>
-          <div className="text-slate-700">{text ?? 'Загрузка…'}</div>
-          <Link to={`/rules#rule-${rid.replace('.', '-')}`} className="mt-2 inline-block text-sky-700 underline">
+          <div className="text-ink-700">{text ?? 'Загрузка…'}</div>
+          <Link to={`/rules#rule-${rid.replace('.', '-')}`} className="mt-2 inline-block text-brand-700 underline">
             Открыть в Положении
           </Link>
         </div>
