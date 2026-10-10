@@ -2,6 +2,7 @@
 
 Возвращает нормализованное *цветное* изображение (цвет нужен детектору подписи
 и печати) и матрицу преобразования исходных координат -> нормализованные.
+Порядок: лист (перспектива) -> тени -> блики -> наклон -> апскейл.
 """
 from __future__ import annotations
 
@@ -38,34 +39,93 @@ def _scale_matrix(k: float) -> np.ndarray:
 
 
 # ---------- перспектива (лист на столе) ----------
-def find_page_quad(rgb: np.ndarray) -> np.ndarray | None:
-    h, w = rgb.shape[:2]
-    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
-    # лист светлее фона: порог Оцу + крупнейший контур
-    _, th = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
-    contours, _ = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not contours:
-        return None
-    cnt = max(contours, key=cv2.contourArea)
-    area = cv2.contourArea(cnt)
-    if area < 0.2 * h * w or area > 0.97 * h * w:
-        return None
-    peri = cv2.arcLength(cnt, True)
-    approx = cv2.approxPolyDP(cnt, 0.03 * peri, True)
-    if len(approx) != 4:
-        hull = cv2.convexHull(cnt)
-        approx = cv2.approxPolyDP(hull, 0.03 * cv2.arcLength(hull, True), True)
-        if len(approx) != 4:
-            return None
-    return approx.reshape(4, 2).astype(np.float32)
-
-
 def _order_quad(pts: np.ndarray) -> np.ndarray:
     s = pts.sum(axis=1)
     d = np.diff(pts, axis=1).ravel()
     return np.array([pts[np.argmin(s)], pts[np.argmin(d)], pts[np.argmax(s)], pts[np.argmax(d)]], dtype=np.float32)
+
+
+def _quad_is_page(quad: np.ndarray, h: int, w: int) -> bool:
+    """Четырёхугольник похож на лист: большая площадь, похожие противоположные стороны, разумные пропорции."""
+    tl, tr, br, bl = _order_quad(quad)
+    top, bottom = np.linalg.norm(tr - tl), np.linalg.norm(br - bl)
+    left, right = np.linalg.norm(bl - tl), np.linalg.norm(br - tr)
+    if min(top, bottom, left, right) < 0.25 * min(h, w):
+        return False
+    if min(top, bottom) / max(top, bottom) < 0.7 or min(left, right) / max(left, right) < 0.7:
+        return False
+    aspect = max(top, bottom) / max(left, right)
+    if not (0.45 < aspect < 2.2):
+        return False
+    area = cv2.contourArea(quad.astype(np.float32))
+    return 0.3 * h * w <= area <= 0.97 * h * w
+
+
+def _largest_quad(mask: np.ndarray, h: int, w: int) -> np.ndarray | None:
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for cnt in sorted(contours, key=cv2.contourArea, reverse=True)[:3]:
+        if cv2.contourArea(cnt) < 0.3 * h * w:
+            break
+        peri = cv2.arcLength(cnt, True)
+        for eps in (0.02, 0.04, 0.06):
+            approx = cv2.approxPolyDP(cnt, eps * peri, True)
+            if len(approx) == 4:
+                quad = approx.reshape(4, 2).astype(np.float32)
+                if _quad_is_page(quad, h, w):
+                    return quad
+        hull = cv2.convexHull(cnt)
+        approx = cv2.approxPolyDP(hull, 0.04 * cv2.arcLength(hull, True), True)
+        if len(approx) == 4:
+            quad = approx.reshape(4, 2).astype(np.float32)
+            if _quad_is_page(quad, h, w):
+                return quad
+    return None
+
+
+def _paper_score(gray: np.ndarray, quad: np.ndarray) -> float:
+    """Насколько внутри четырёхугольника «бумага»: яркость внутри минус яркость снаружи (если снаружи есть что мерить)."""
+    h, w = gray.shape
+    mask = np.zeros((h, w), np.uint8)
+    cv2.fillPoly(mask, [quad.astype(np.int32)], 255)
+    inside = float(gray[mask > 0].mean())
+    outside_px = gray[mask == 0]
+    if outside_px.size < 0.03 * h * w:
+        return inside - 128  # лист почти во весь кадр — оцениваем только яркость
+    return inside - float(outside_px.mean())
+
+
+def find_page_quad(rgb: np.ndarray) -> np.ndarray | None:
+    """Контур листа: кандидаты по границам (устойчиво к теням) и по порогу яркости; выбирается
+    самый тесный кандидат, внутри которого действительно светлая бумага."""
+    h, w = rgb.shape[:2]
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    blur = cv2.GaussianBlur(gray, (7, 7), 0)
+    candidates: list[np.ndarray] = []
+
+    edges = cv2.Canny(blur, 30, 90)
+    edges = cv2.dilate(edges, np.ones((5, 5), np.uint8), iterations=2)
+    edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
+    for seed in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        filled = edges.copy()
+        ff = np.zeros((h + 2, w + 2), np.uint8)
+        cv2.floodFill(filled, ff, seed, 255)
+        filled = cv2.bitwise_or(edges, cv2.bitwise_not(filled))
+        quad = _largest_quad(filled, h, w)
+        if quad is not None:
+            candidates.append(quad)
+    for src in (blur, cv2.createCLAHE(clipLimit=3.0, tileGridSize=(4, 4)).apply(blur)):
+        _, th = cv2.threshold(src, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
+        th = cv2.morphologyEx(th, cv2.MORPH_OPEN, np.ones((25, 25), np.uint8))
+        quad = _largest_quad(th, h, w)
+        if quad is not None:
+            candidates.append(quad)
+
+    valid = [(cv2.contourArea(c.astype(np.float32)), c) for c in candidates if _paper_score(gray, c) > 25]
+    if not valid:
+        return None
+    valid.sort(key=lambda t: t[0])
+    return valid[0][1]
 
 
 def warp_perspective(rgb: np.ndarray, quad: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -76,26 +136,23 @@ def warp_perspective(rgb: np.ndarray, quad: np.ndarray) -> tuple[np.ndarray, np.
         return rgb, np.eye(3)
     dst = np.array([[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]], dtype=np.float32)
     M = cv2.getPerspectiveTransform(np.array([tl, tr, br, bl]), dst)
-    return cv2.warpPerspective(rgb, M, (w, h), borderValue=(255, 255, 255)), M
+    return cv2.warpPerspective(rgb, M, (w, h), flags=cv2.INTER_CUBIC, borderValue=(255, 255, 255)), M
 
 
 # ---------- наклон ----------
 def estimate_skew(gray: np.ndarray, max_angle: float) -> float:
-    """Угол наклона текстовых строк в градусах (положительный = против часовой)."""
+    """Угол наклона текстовых строк в градусах (как в atan2 в координатах изображения)."""
     small = gray
     if max(gray.shape) > 1500:
         k = 1500 / max(gray.shape)
         small = cv2.resize(gray, None, fx=k, fy=k, interpolation=cv2.INTER_AREA)
-    inv = cv2.bitwise_not(small)
-    th = cv2.threshold(inv, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    # растягиваем буквы в строки
+    th = cv2.threshold(small, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
     th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (25, 3)))
     edges = cv2.Canny(th, 50, 150)
     lines = cv2.HoughLinesP(edges, 1, np.pi / 360, threshold=80, minLineLength=small.shape[1] // 6, maxLineGap=20)
     if lines is None:
         return 0.0
-    angles = []
-    weights = []
+    angles, weights = [], []
     for x1, y1, x2, y2 in lines[:, 0]:
         ang = np.degrees(np.arctan2(y2 - y1, x2 - x1))
         if abs(ang) <= max_angle:
@@ -103,13 +160,10 @@ def estimate_skew(gray: np.ndarray, max_angle: float) -> float:
             weights.append(np.hypot(x2 - x1, y2 - y1))
     if not angles:
         return 0.0
-    angles = np.array(angles)
-    weights = np.array(weights)
-    # взвешенная медиана
+    angles, weights = np.array(angles), np.array(weights)
     order = np.argsort(angles)
     cum = np.cumsum(weights[order])
-    med = angles[order][np.searchsorted(cum, cum[-1] / 2)]
-    return float(med)
+    return float(angles[order][np.searchsorted(cum, cum[-1] / 2)])
 
 
 def rotate_keep(rgb: np.ndarray, angle: float) -> tuple[np.ndarray, np.ndarray]:
@@ -121,29 +175,35 @@ def rotate_keep(rgb: np.ndarray, angle: float) -> tuple[np.ndarray, np.ndarray]:
     R[0, 2] += nw / 2 - c[0]
     R[1, 2] += nh / 2 - c[1]
     out = cv2.warpAffine(rgb, R, (nw, nh), flags=cv2.INTER_CUBIC, borderValue=(255, 255, 255))
-    M = np.vstack([R, [0, 0, 1]])
-    return out, M
+    return out, np.vstack([R, [0, 0, 1]])
 
 
 # ---------- тени / блики ----------
 def remove_shadow(rgb: np.ndarray) -> np.ndarray:
+    """Делим на оценку фона (бумаги): выравнивает освещение, сохраняет цвет чернил."""
     out = []
     for ch in cv2.split(rgb):
-        dil = cv2.dilate(ch, np.ones((7, 7), np.uint8))
-        bg = cv2.medianBlur(dil, 41)
-        diff = 255 - cv2.absdiff(ch, bg)
-        norm = cv2.normalize(diff, None, 0, 255, cv2.NORM_MINMAX)
+        bg = cv2.medianBlur(cv2.dilate(ch, np.ones((9, 9), np.uint8)), 51)
+        bg = np.maximum(bg, 1).astype(np.float32)
+        norm = np.clip(ch.astype(np.float32) / bg * 245.0, 0, 255).astype(np.uint8)
         out.append(norm)
     return cv2.merge(out)
 
 
-def remove_glare(rgb: np.ndarray) -> np.ndarray:
+def soften_glare(rgb: np.ndarray) -> tuple[np.ndarray, bool]:
+    """Пересвеченные пятна (ярче бумаги) приглушаем до уровня бумаги; текст под бликом не восстанавливаем."""
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
-    mask = ((hsv[:, :, 2] > 250) & (hsv[:, :, 1] < 20)).astype(np.uint8) * 255
-    if mask.mean() < 0.5:  # бликов почти нет
-        return rgb
-    mask = cv2.dilate(mask, np.ones((5, 5), np.uint8))
-    return cv2.inpaint(rgb, mask, 3, cv2.INPAINT_TELEA)
+    v, s = hsv[:, :, 2], hsv[:, :, 1]
+    paper = np.median(v[v > 150]) if (v > 150).any() else 255
+    if paper >= 252:
+        return rgb, False
+    mask = ((v > min(254, paper + 15)) & (s < 25)).astype(np.uint8)
+    if mask.mean() < 0.003:
+        return rgb, False
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
+    out = rgb.copy()
+    out[mask.astype(bool)] = np.clip(rgb[mask.astype(bool)].astype(np.int32) - int(255 - paper), 0, 255).astype(np.uint8)
+    return out, True
 
 
 # ---------- высота текста ----------
@@ -160,8 +220,7 @@ def estimate_text_height(gray: np.ndarray) -> float:
 
 def gray_for_ocr(rgb: np.ndarray) -> np.ndarray:
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    return clahe.apply(gray)
+    return cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(gray)
 
 
 def run(rgb: np.ndarray) -> PreprocessResult:
@@ -181,12 +240,13 @@ def run(rgb: np.ndarray) -> PreprocessResult:
                 rgb, Mp = warp_perspective(rgb, quad)
                 M = Mp @ M
                 steps.append("perspective")
-        if cfg.get("enable_glare_removal", True) and quality["glare_ratio"] > 0.002:
-            rgb = remove_glare(rgb)
-            steps.append("glare")
         if cfg.get("enable_shadow_removal", True) and quality["bg_unevenness"] > 20:
             rgb = remove_shadow(rgb)
             steps.append("shadow")
+        if cfg.get("enable_glare_removal", True):
+            rgb, done = soften_glare(rgb)
+            if done:
+                steps.append("glare")
 
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     angle = estimate_skew(gray, cfg.get("deskew_max_angle", 30))
@@ -204,9 +264,7 @@ def run(rgb: np.ndarray) -> PreprocessResult:
         M = _scale_matrix(2.0) @ M
         steps.append("upscale x2")
 
-    return PreprocessResult(
-        rgb=rgb, gray_for_ocr=gray_for_ocr(rgb), matrix=M, steps=steps, quality=quality, scale=scale
-    )
+    return PreprocessResult(rgb=rgb, gray_for_ocr=gray_for_ocr(rgb), matrix=M, steps=steps, quality=quality, scale=scale)
 
 
 def map_bbox_back(bbox, M: np.ndarray):

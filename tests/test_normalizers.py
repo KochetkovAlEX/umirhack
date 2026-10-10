@@ -33,6 +33,8 @@ def test_course(raw, expected):
 def test_person_name_homoglyphs():
     assert nz.normalize_person_name("Пaвлов Фёдор Дмитриевич") == "Павлов Фёдор Дмитриевич"
     assert nz.normalize_person_name("  иванов   борис николаевич ") == "Иванов Борис Николаевич"
+    assert nz.normalize_person_name("ЖуковаПётр Андреевич") == "Жукова Пётр Андреевич"
+    assert nz.normalize_person_name("Петрова-Иванова Анна Олеговна") == "Петрова-Иванова Анна Олеговна"
 
 
 @pytest.mark.parametrize("raw,expected", [("Об-1001", "ОБ-1001"), ("OБ-1001", "ОБ-1001"), ("ПР–2027", "ПР-2027"), ("№ ПР-2027", "ПР-2027")])

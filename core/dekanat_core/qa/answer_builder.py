@@ -8,7 +8,6 @@ from __future__ import annotations
 from ..config.schema import DocTypeConfig
 from ..models import NOT_FOUND, Answer, DocumentResult
 from ..rules.positions import load_positions
-from ..rules.validator import human_label
 from .intents import Intent, classify_question
 
 NO_INFO_TEXT = "В документе и в Положении нет информации для ответа на этот вопрос. Обратитесь в деканат."

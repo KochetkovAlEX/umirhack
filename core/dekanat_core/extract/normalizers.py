@@ -155,6 +155,8 @@ def normalize_int(raw: str) -> str:
 def normalize_person_name(raw: str) -> str:
     s = clean_spaces(raw).translate(_LAT2CYR)
     s = re.sub(r"[^А-Яа-яЁё\-\s.]", "", s)
+    # OCR иногда склеивает слова: «ЖуковаПётр» -> «Жукова Пётр» (все части ФИО начинаются с заглавной)
+    s = re.sub(r"([а-яё])([А-ЯЁ])", r"\1 \2", s)
     s = clean_spaces(s)
     parts = []
     for w in s.split(" "):

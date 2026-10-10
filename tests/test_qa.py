@@ -2,7 +2,7 @@
 import pytest
 
 from dekanat_core.config.schema import get_doc_type
-from dekanat_core.models import NOT_FOUND, DocumentResult, FieldValue, Validation
+from dekanat_core.models import NOT_FOUND, DocumentResult, FieldValue
 from dekanat_core.qa.answer_builder import answer_question, check_document
 from dekanat_core.qa.intents import classify_question
 from dekanat_core.rules.validator import validate

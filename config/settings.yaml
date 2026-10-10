@@ -14,7 +14,7 @@ ocr:
 
 preprocess:
   max_side: 2400           # ограничение размера для скорости
-  min_text_height_px: 18   # ниже — апскейл x2
+  min_text_height_px: 12   # медианная высота компонент текста ниже — апскейл x2
   deskew_max_angle: 30
   enable_perspective: true
   enable_shadow_removal: true

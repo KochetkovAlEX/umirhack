@@ -11,6 +11,7 @@ import os
 import sys
 from pathlib import Path
 
+import httpx
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ChatAction, ParseMode
@@ -75,6 +76,33 @@ async def quick_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="⚖️ Кто принимает решение?", callback_data="q:decision")],
         [InlineKeyboardButton(text="📍 Показать поле на снимке", callback_data="q:fields")],
     ])
+
+
+# ---------------- ошибки ----------------
+@router.errors()
+async def on_error(event, *args, **kwargs):
+    """Любая ошибка обработчика -> понятное сообщение пользователю, а не молчание."""
+    exc = event.exception
+    log.exception("Ошибка обработчика: %s", exc)
+    msg = None
+    upd = event.update
+    if upd.message:
+        msg = upd.message
+    elif upd.callback_query and upd.callback_query.message:
+        msg = upd.callback_query.message
+    if msg is None:
+        return True
+    if isinstance(exc, api.ApiError):
+        text = f"❌ {exc}"
+    elif isinstance(exc, (httpx.ConnectError, httpx.TimeoutException)):
+        text = "❌ Сервис распознавания сейчас недоступен (бэкенд не отвечает). Попробуйте через минуту."
+    else:
+        text = "❌ Не удалось обработать запрос. Попробуйте ещё раз или пришлите документ заново (/new)."
+    try:
+        await msg.answer(text)
+    except Exception:  # pragma: no cover
+        pass
+    return True
 
 
 # ---------------- команды ----------------
@@ -199,7 +227,15 @@ async def on_file(m: Message, state: FSMContext, bot: Bot):
     data = buf.read()
     await state.update_data(pending_file=data, pending_name=name, pending_question=(m.caption or "").strip())
     await state.set_state(Flow.waiting_type)
-    await m.answer("Какой это документ?", reply_markup=await types_kb("type"))
+    try:
+        kb = await types_kb("type")
+    except (api.ApiError, httpx.HTTPError) as exc:
+        log.warning("doc-types недоступны: %s", exc)
+        await m.answer("❌ Сервис распознавания недоступен, не могу получить список типов. Попробуйте через минуту "
+                       "и отправьте документ заново.")
+        await state.clear()
+        return
+    await m.answer("Какой это документ?", reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("type:"))
