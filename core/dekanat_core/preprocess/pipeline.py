@@ -231,6 +231,15 @@ def run(rgb: np.ndarray) -> PreprocessResult:
     if k != 1.0:
         M = _scale_matrix(k) @ M
         steps.append(f"resize x{k:.2f}")
+
+    # ориентация страницы 90/180/270° (снимки телефоном часто приходят повёрнутыми)
+    if cfg.get("enable_orientation", True):
+        from .orientation import fix_orientation
+
+        rgb, Mo, angle, src = fix_orientation(rgb, cfg.get("orientation_min_conf", 0.6))
+        if angle:
+            M = Mo @ M
+            steps.append(f"orientation {angle}° ({src})")
     quality = q.assess(rgb)
 
     if not quality["is_scan_like"]:

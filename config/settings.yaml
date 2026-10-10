@@ -16,6 +16,8 @@ preprocess:
   max_side: 2400           # ограничение размера для скорости
   min_text_height_px: 12   # медианная высота компонент текста ниже — апскейл x2
   deskew_max_angle: 30
+  enable_orientation: true   # поворот страницы на 90/180/270° (PP-LCNet doc_ori, резерв Tesseract OSD)
+  orientation_min_conf: 0.6
   enable_perspective: true
   enable_shadow_removal: true
   enable_glare_removal: true

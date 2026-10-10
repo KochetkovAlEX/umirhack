@@ -94,6 +94,10 @@ def photo_combo(img):
 
 AUGS = {
     "original": lambda x: x,
+    "rot90": lambda x: np.ascontiguousarray(np.rot90(x, 1)),
+    "rot180": lambda x: np.ascontiguousarray(np.rot90(x, 2)),
+    "rot270": lambda x: np.ascontiguousarray(np.rot90(x, 3)),
+    "rot90_photo": lambda x: np.ascontiguousarray(np.rot90(photo_combo(x), 1)),
     "rotate_5": lambda x: rotate(x, 5),
     "rotate_15": lambda x: rotate(x, -15),
     "rotate_30": lambda x: rotate(x, 30),

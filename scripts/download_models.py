@@ -35,6 +35,9 @@ def download_paddle():
     eng = PaddleEngine()
     print("[paddle] загрузка моделей (скачиваются при первом запуске)...")
     print("[paddle] готово" if eng.available() else "[paddle] НЕ УДАЛОСЬ (см. лог)")
+    from dekanat_core.preprocess.orientation import _load_model
+
+    print("[paddle] классификатор ориентации:", "готово" if _load_model() is not None else "НЕ УДАЛОСЬ")
 
 
 if __name__ == "__main__":

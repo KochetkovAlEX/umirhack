@@ -1,0 +1,38 @@
+[
+  {
+    "aug": "rot90",
+    "fields": 1.0,
+    "validation": 1.0,
+    "questions": 1.0,
+    "type_acc": 1.0,
+    "marks_acc": 1.0,
+    "sec_per_doc": 4.54
+  },
+  {
+    "aug": "rot180",
+    "fields": 1.0,
+    "validation": 1.0,
+    "questions": 1.0,
+    "type_acc": 1.0,
+    "marks_acc": 1.0,
+    "sec_per_doc": 4.45
+  },
+  {
+    "aug": "rot270",
+    "fields": 1.0,
+    "validation": 1.0,
+    "questions": 1.0,
+    "type_acc": 1.0,
+    "marks_acc": 1.0,
+    "sec_per_doc": 3.95
+  },
+  {
+    "aug": "rot90_photo",
+    "fields": 0.983333,
+    "validation": 1.0,
+    "questions": 1.0,
+    "type_acc": 1.0,
+    "marks_acc": 1.0,
+    "sec_per_doc": 3.89
+  }
+]
