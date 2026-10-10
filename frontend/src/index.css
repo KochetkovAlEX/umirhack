@@ -121,3 +121,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 
 @keyframes pulse-ring { 0% { opacity: .9 } 50% { opacity: .35 } 100% { opacity: .9 } }
 .box-highlight { animation: pulse-ring 1.2s ease-in-out infinite; }
+
+/* Внутри Telegram Mini App: компактная шапка, нижний отступ под системные кнопки */
+:root[data-tg="1"] .tg-hide { display: none; }
+:root[data-tg="1"] main { padding-bottom: 2.5rem; }

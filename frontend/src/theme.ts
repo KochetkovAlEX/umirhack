@@ -1,5 +1,7 @@
 // Светлая/тёмная тема: data-theme на <html>, выбор хранится в localStorage,
-// по умолчанию — системная настройка prefers-color-scheme.
+// по умолчанию — системная настройка prefers-color-scheme; внутри Telegram — тема клиента.
+import { tgInit, tgSyncChrome, tgTheme } from './telegram'
+
 export type Theme = 'light' | 'dark'
 const KEY = 'dekanat-theme'
 
@@ -10,12 +12,15 @@ export function getTheme(): Theme {
   } catch {
     /* localStorage недоступен (приватный режим) */
   }
+  const fromTg = tgTheme()
+  if (fromTg) return fromTg
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 export function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#1b1e24' : '#50b848')
+  tgSyncChrome(theme)
 }
 
 export function setTheme(theme: Theme) {
@@ -29,6 +34,13 @@ export function setTheme(theme: Theme) {
 
 export function initTheme() {
   applyTheme(getTheme())
+  tgInit((t) => {
+    try {
+      if (!localStorage.getItem(KEY)) applyTheme(t)
+    } catch {
+      applyTheme(t)
+    }
+  })
   window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => {
     try {
       if (!localStorage.getItem(KEY)) applyTheme(getTheme())

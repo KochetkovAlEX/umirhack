@@ -20,7 +20,7 @@ function Logo() {
       </span>
       <span className="leading-tight">
         <span className="block font-bold text-[17px] text-ink-900 tracking-tight">Онлайн-деканат</span>
-        <span className="block text-[11px] text-ink-500">Цифровой секретарь студента · хакатон Банка «Центр-инвест»</span>
+        <span className="tg-hide block text-[11px] text-ink-500">Цифровой секретарь студента · хакатон Банка «Центр-инвест»</span>
       </span>
     </NavLink>
   )
@@ -75,7 +75,7 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
         </Routes>
       </main>
-      <footer className="border-t border-ink-200 bg-surface">
+      <footer className="tg-hide border-t border-ink-200 bg-surface">
         <div className="mx-auto max-w-7xl px-4 py-5 grid gap-2 sm:grid-cols-[1fr_auto] text-xs text-ink-500">
           <div>
             <div className="text-ink-700 font-medium">Предварительная проверка по учебному Положению.</div>

@@ -19,8 +19,8 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import (BufferedInputFile, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message,
-                           ReplyKeyboardMarkup, KeyboardButton)
+from aiogram.types import (BufferedInputFile, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
+                           MenuButtonWebApp, Message, ReplyKeyboardMarkup, WebAppInfo)
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -33,6 +33,14 @@ log = logging.getLogger("bot")
 router = Router()
 
 MAX_TG_FILE = 20 * 1024 * 1024
+# Публичный HTTPS-адрес веб-интерфейса для Telegram Mini App (например, туннель cloudflared).
+WEBAPP_URL = os.environ.get("WEBAPP_URL", "").rstrip("/")
+
+
+def webapp_button(text: str = "🌐 Открыть приложение", path: str = "/") -> InlineKeyboardButton | None:
+    if not WEBAPP_URL:
+        return None
+    return InlineKeyboardButton(text=text, web_app=WebAppInfo(url=f"{WEBAPP_URL}{path}"))
 COMPLETENESS_Q = "Содержит ли документ все обязательные сведения по Положению?"
 
 
@@ -42,11 +50,14 @@ class Flow(StatesGroup):
 
 
 def main_kb() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[
+    rows = [
         [KeyboardButton(text="✅ Проверить комплектность"), KeyboardButton(text="🗂 Карточка полей")],
         [KeyboardButton(text="🖼 Снимок с разметкой"), KeyboardButton(text="📝 Распознанный текст")],
         [KeyboardButton(text="📄 Новый документ"), KeyboardButton(text="📘 Положение")],
-    ])
+    ]
+    if WEBAPP_URL:
+        rows.append([KeyboardButton(text="🌐 Открыть приложение", web_app=WebAppInfo(url=f"{WEBAPP_URL}/"))])
+    return ReplyKeyboardMarkup(resize_keyboard=True, keyboard=rows)
 
 
 async def types_kb(prefix: str) -> InlineKeyboardMarkup:
@@ -70,12 +81,16 @@ def fields_kb(doc: dict) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-async def quick_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
+async def quick_kb(doc_id: str | None = None) -> InlineKeyboardMarkup:
+    rows = [
         [InlineKeyboardButton(text="✅ Проверить комплектность", callback_data="q:check")],
         [InlineKeyboardButton(text="⚖️ Кто принимает решение?", callback_data="q:decision")],
         [InlineKeyboardButton(text="📍 Показать поле на снимке", callback_data="q:fields")],
-    ])
+    ]
+    wb = webapp_button("🌐 Открыть документ в приложении", f"/d/{doc_id}" if doc_id else "/")
+    if wb:
+        rows.append([wb])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 # ---------------- ошибки ----------------
@@ -130,6 +145,17 @@ async def cmd_types(m: Message):
     types = await api.doc_types()
     await m.answer("<b>Поддерживаемые типы</b>\n" + "\n".join(
         f"• {t['title']} — раздел {t['rules_section']} Положения, {len(t['fields'])} полей" for t in types))
+
+
+@router.message(Command("app"))
+async def cmd_app(m: Message, state: FSMContext):
+    if not WEBAPP_URL:
+        await m.answer("Веб-приложение не настроено: задайте WEBAPP_URL (публичный HTTPS-адрес сайта) в .env.")
+        return
+    data = await state.get_data()
+    path = f"/d/{data['doc_id']}" if data.get("doc_id") else "/"
+    text = "Открыть текущий документ в приложении:" if data.get("doc_id") else "Открыть веб-приложение «Онлайн-деканат»:"
+    await m.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=[[webapp_button("🌐 Открыть приложение", path)]]))
 
 
 @router.message(Command("rules"))
@@ -267,7 +293,7 @@ async def on_type_chosen(cq: CallbackQuery, state: FSMContext, bot: Bot):
     await cq.message.answer(texts.format_document(doc), reply_markup=main_kb())
     if doc.get("answer"):
         await _send_answer(cq.message, doc["answer"], doc["result"]["fields"], doc["id"])
-    await cq.message.answer("Задайте вопрос о документе или выберите действие:", reply_markup=await quick_kb())
+    await cq.message.answer("Задайте вопрос о документе или выберите действие:", reply_markup=await quick_kb(doc["id"]))
 
 
 @router.callback_query(F.data.startswith("retype:"))
@@ -353,6 +379,14 @@ async def main():
     bot = Bot(token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
+    if WEBAPP_URL:
+        # кнопка меню рядом с полем ввода открывает Mini App
+        await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Приложение", web_app=WebAppInfo(url=f"{WEBAPP_URL}/")))
+        log.info("Mini App: %s", WEBAPP_URL)
+    else:
+        from aiogram.types import MenuButtonDefault
+
+        await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
     log.info("Бот запущен; API: %s", api.API_BASE)
     await dp.start_polling(bot)
 
