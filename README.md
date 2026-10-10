@@ -158,8 +158,12 @@ data/                        стартовый пакет организато�
 Telegram принимает только публичный HTTPS-адрес, поэтому для локального запуска нужен туннель:
 
 ```bash
-python scripts/tunnel_keeper.py      # держит ssh-туннель localhost.run (без регистрации), адрес вида https://xxxx.lhr.life
+python scripts/tunnel_keeper.py --provider serveo --name dekanat-ci   # постоянный адрес https://dekanat-ci.serveousercontent.com
+# без имени/регистрации: python scripts/tunnel_keeper.py  (localhost.run, случайный адрес, меняется при переподключении)
 ```
+
+Постоянное имя serveo бесплатно: один раз зарегистрируйте SSH-ключ (`ssh-keygen -t ed25519`) на https://console.serveo.net/ssh/keys
+(вход через Google/GitHub). На бесплатном тарифе serveo при первом открытии показывает страницу «Continue to Site».
 
 Хранитель сам перезапускает туннель при обрыве, записывает актуальный адрес в `.env` (`WEBAPP_URL`) и в
 `scripts/dev/webapp_url.txt`, обновляет кнопку меню бота; бот читает адрес при каждом построении клавиатуры,
