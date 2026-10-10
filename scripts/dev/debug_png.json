@@ -1,0 +1,652 @@
+[
+  {
+    "document_id": "open-001",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.302,
+      "ocr": 13.357,
+      "extract": 0.131
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.948,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-002",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.121,
+      "ocr": 4.865,
+      "extract": 0.119
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.938,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-003",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.147,
+      "ocr": 3.956,
+      "extract": 0.118
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.967,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 0.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-004",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.128,
+      "ocr": 4.558,
+      "extract": 0.057
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.946,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.0
+    }
+  },
+  {
+    "document_id": "open-005",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.125,
+      "ocr": 4.506,
+      "extract": 0.118
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.942,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-006",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.151,
+      "ocr": 3.982,
+      "extract": 0.121
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.936,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.355
+    }
+  },
+  {
+    "document_id": "open-007",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.162,
+      "ocr": 3.88,
+      "extract": 0.115
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.938,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-008",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.218,
+      "ocr": 4.112,
+      "extract": 0.119
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.937,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-009",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.217,
+      "ocr": 3.785,
+      "extract": 0.121
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.942,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.355
+    }
+  },
+  {
+    "document_id": "open-010",
+    "type_auto": "study_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.108,
+      "ocr": 3.696,
+      "extract": 0.055
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.968,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 0.0,
+      "seal_present": 0.0
+    }
+  },
+  {
+    "document_id": "open-011",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.194,
+      "ocr": 3.677,
+      "extract": 0.021
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.938,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0
+    }
+  },
+  {
+    "document_id": "open-012",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.126,
+      "ocr": 3.223,
+      "extract": 0.028
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.935,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0
+    }
+  },
+  {
+    "document_id": "open-013",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.137,
+      "ocr": 3.812,
+      "extract": 0.028
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.975,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 0.0
+    }
+  },
+  {
+    "document_id": "open-014",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.137,
+      "ocr": 3.522,
+      "extract": 0.027
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.964,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0
+    }
+  },
+  {
+    "document_id": "open-015",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.131,
+      "ocr": 3.494,
+      "extract": 0.029
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.953,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0
+    }
+  },
+  {
+    "document_id": "open-016",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.124,
+      "ocr": 4.043,
+      "extract": 0.028
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.951,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0
+    }
+  },
+  {
+    "document_id": "open-017",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.155,
+      "ocr": 3.367,
+      "extract": 0.027
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.936,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0
+    }
+  },
+  {
+    "document_id": "open-018",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.14,
+      "ocr": 4.002,
+      "extract": 0.026
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.935,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0
+    }
+  },
+  {
+    "document_id": "open-019",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.131,
+      "ocr": 3.934,
+      "extract": 0.028
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.93,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0
+    }
+  },
+  {
+    "document_id": "open-020",
+    "type_auto": "academic_leave_application",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.131,
+      "ocr": 3.342,
+      "extract": 0.029
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.949,
+      "label_hit_ratio": 0.86,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0
+    }
+  },
+  {
+    "document_id": "open-021",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.136,
+      "ocr": 4.222,
+      "extract": 0.116
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.946,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-022",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.128,
+      "ocr": 4.064,
+      "extract": 0.117
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.955,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-023",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.228,
+      "ocr": 3.809,
+      "extract": 0.125
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.966,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 0.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-024",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.147,
+      "ocr": 3.748,
+      "extract": 0.054
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.942,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.0
+    }
+  },
+  {
+    "document_id": "open-025",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.121,
+      "ocr": 3.992,
+      "extract": 0.118
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.95,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-026",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.157,
+      "ocr": 4.333,
+      "extract": 0.114
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.931,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-027",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.204,
+      "ocr": 3.759,
+      "extract": 0.12
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.952,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-028",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.137,
+      "ocr": 3.807,
+      "extract": 0.12
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.94,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-029",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.124,
+      "ocr": 4.193,
+      "extract": 0.12
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.943,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 1.0,
+      "seal_present": 0.325
+    }
+  },
+  {
+    "document_id": "open-030",
+    "type_auto": "internship_certificate",
+    "type_conf": 1.0,
+    "timings": {
+      "preprocess": 0.237,
+      "ocr": 3.672,
+      "extract": 0.055
+    },
+    "ocr": {
+      "engines": [
+        "paddle"
+      ],
+      "primary_mean_conf": 0.962,
+      "label_hit_ratio": 1.0,
+      "chosen": "paddle"
+    },
+    "marks": {
+      "signature_present": 0.0,
+      "seal_present": 0.0
+    }
+  }
+]

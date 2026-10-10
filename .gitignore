@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+frontend/dist/
+backend/media/
+backend/db.sqlite3
+backend/static/frontend/
+.env
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+report.json
+bench_out/
+models/

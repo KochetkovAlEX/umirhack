@@ -1,0 +1,42 @@
+# Настройки ядра dekanat_core. Все значения можно переопределить переменной
+# окружения DEKANAT_SETTINGS=<путь к yaml>.
+ocr:
+  primary: paddle          # paddle | tesseract
+  fallback: tesseract      # движок, который запускается, если primary дал слабый результат
+  paddle_lang: ru
+  tesseract_lang: rus+eng
+  tesseract_cmd: null      # путь к tesseract.exe, если его нет в PATH
+  tessdata_dir: models/tessdata  # каталог с rus.traineddata (если не в стандартном tessdata)
+  cpu_threads: 8
+  min_mean_conf: 0.75      # ниже — подключаем fallback
+  min_label_hits: 0.6      # доля найденных меток полей, ниже — подключаем fallback
+  use_gpu: false
+
+preprocess:
+  max_side: 2400           # ограничение размера для скорости
+  min_text_height_px: 18   # ниже — апскейл x2
+  deskew_max_angle: 30
+  enable_perspective: true
+  enable_shadow_removal: true
+  enable_glare_removal: true
+
+marks:
+  signature:
+    min_ink_ratio: 0.012   # доля «чернильных» пикселей в ROI
+    min_height_ratio: 0.25 # вертикальный разброс чернил относительно высоты ROI
+  seal:
+    min_blue_ratio: 0.008
+    min_radius_ratio: 0.03 # относительно ширины страницы
+    max_radius_ratio: 0.12
+
+extract:
+  label_match_threshold: 82   # rapidfuzz, 0..100
+  empty_pattern: "^[\\s_\\-—–·.,:;|~]*$"
+
+qa:
+  field_match_threshold: 80
+  faq_threshold: 0.55
+
+io:
+  max_file_mb: 20
+  pdf_dpi: 200
