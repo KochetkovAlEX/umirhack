@@ -22,3 +22,4 @@ scripts/dev/*.txt
 scripts/dev/*.png
 scripts/dev/*.json
 scripts/dev/*.log
+scripts/dev/webapp_url.txt

@@ -33,14 +33,31 @@ log = logging.getLogger("bot")
 router = Router()
 
 MAX_TG_FILE = 20 * 1024 * 1024
-# Публичный HTTPS-адрес веб-интерфейса для Telegram Mini App (например, туннель cloudflared).
-WEBAPP_URL = os.environ.get("WEBAPP_URL", "").rstrip("/")
+# Публичный HTTPS-адрес веб-интерфейса для Telegram Mini App. Бесплатные туннели меняют адрес при
+# переподключении, поэтому адрес читается при каждом обращении: сначала из файла, который обновляет
+# scripts/tunnel_keeper.py, затем из переменной окружения WEBAPP_URL.
+_URL_FILE = Path(os.environ.get("WEBAPP_URL_FILE", Path(__file__).resolve().parents[1] / "scripts" / "dev" / "webapp_url.txt"))
+
+
+def webapp_url() -> str:
+    try:
+        if _URL_FILE.exists():
+            u = _URL_FILE.read_text(encoding="utf-8").strip()
+            if u.startswith("https://"):
+                return u.rstrip("/")
+    except OSError:
+        pass
+    return os.environ.get("WEBAPP_URL", "").rstrip("/")
+
+
+WEBAPP_URL = webapp_url()  # для стартового лога
 
 
 def webapp_button(text: str = "🌐 Открыть приложение", path: str = "/") -> InlineKeyboardButton | None:
-    if not WEBAPP_URL:
+    url = webapp_url()
+    if not url:
         return None
-    return InlineKeyboardButton(text=text, web_app=WebAppInfo(url=f"{WEBAPP_URL}{path}"))
+    return InlineKeyboardButton(text=text, web_app=WebAppInfo(url=f"{url}{path}"))
 COMPLETENESS_Q = "Содержит ли документ все обязательные сведения по Положению?"
 
 
@@ -55,8 +72,9 @@ def main_kb() -> ReplyKeyboardMarkup:
         [KeyboardButton(text="🖼 Снимок с разметкой"), KeyboardButton(text="📝 Распознанный текст")],
         [KeyboardButton(text="📄 Новый документ"), KeyboardButton(text="📘 Положение")],
     ]
-    if WEBAPP_URL:
-        rows.append([KeyboardButton(text="🌐 Открыть приложение", web_app=WebAppInfo(url=f"{WEBAPP_URL}/"))])
+    url = webapp_url()
+    if url:
+        rows.append([KeyboardButton(text="🌐 Открыть приложение", web_app=WebAppInfo(url=f"{url}/"))])
     return ReplyKeyboardMarkup(resize_keyboard=True, keyboard=rows)
 
 
@@ -149,8 +167,8 @@ async def cmd_types(m: Message):
 
 @router.message(Command("app"))
 async def cmd_app(m: Message, state: FSMContext):
-    if not WEBAPP_URL:
-        await m.answer("Веб-приложение не настроено: задайте WEBAPP_URL (публичный HTTPS-адрес сайта) в .env.")
+    if not webapp_url():
+        await m.answer("Веб-приложение не настроено: запустите scripts/tunnel_keeper.py или задайте WEBAPP_URL в .env.")
         return
     data = await state.get_data()
     path = f"/d/{data['doc_id']}" if data.get("doc_id") else "/"
@@ -379,10 +397,11 @@ async def main():
     bot = Bot(token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
-    if WEBAPP_URL:
-        # кнопка меню рядом с полем ввода открывает Mini App
-        await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Приложение", web_app=WebAppInfo(url=f"{WEBAPP_URL}/")))
-        log.info("Mini App: %s", WEBAPP_URL)
+    url = webapp_url()
+    if url:
+        # кнопка меню рядом с полем ввода открывает Mini App (при смене адреса её обновляет tunnel_keeper)
+        await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Приложение", web_app=WebAppInfo(url=f"{url}/")))
+        log.info("Mini App: %s", url)
     else:
         from aiogram.types import MenuButtonDefault
 
