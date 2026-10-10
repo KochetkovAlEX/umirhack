@@ -39,6 +39,24 @@ def _png_bytes(rgb: np.ndarray) -> bytes:
     return buf.getvalue()
 
 
+PREVIEW_MAX_SIDE = 1400
+
+
+def _jpeg_preview(rgb: np.ndarray, max_side: int = PREVIEW_MAX_SIDE, quality: int = 82) -> bytes:
+    """Лёгкий JPEG для просмотра в браузере/Mini App (пропорции сохраняются, bbox масштабируются на клиенте)."""
+    img = Image.fromarray(rgb)
+    img.thumbnail((max_side, max_side), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=quality, optimize=True, progressive=True)
+    return buf.getvalue()
+
+
+def _jpeg_bytes(img: Image.Image, quality: int = 85) -> bytes:
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="JPEG", quality=quality, optimize=True)
+    return buf.getvalue()
+
+
 @transaction.atomic
 def process_upload(data: bytes, filename: str, doc_type: str = "auto", *, source: str = "web",
                    telegram_user_id: str = "") -> UploadedDocument:
@@ -74,6 +92,8 @@ def process_upload(data: bytes, filename: str, doc_type: str = "auto", *, source
     pr = ProcessingResult(document=doc, result=result.to_dict(), transform=np.asarray(ctx.matrix).tolist(),
                           original_size=list(ctx.original_rgb.shape[1::-1]))
     pr.normalized_image.save(f"{doc.id}/normalized.png", ContentFile(_png_bytes(ctx.normalized_rgb)), save=False)
+    pr.preview_image.save(f"{doc.id}/preview.jpg", ContentFile(_jpeg_preview(ctx.normalized_rgb)), save=False)
+    pr.original_preview.save(f"{doc.id}/original_preview.jpg", ContentFile(_jpeg_preview(ctx.original_rgb)), save=False)
     pr.save()
     doc.doc_type, doc.type_confidence = result.doc_type, result.type_confidence
     doc.status, doc.timings = UploadedDocument.Status.DONE, result.timings
@@ -103,6 +123,25 @@ def check(doc: UploadedDocument) -> QuestionAnswer:
 def normalized_rgb(doc: UploadedDocument) -> np.ndarray:
     with doc.result.normalized_image.open("rb") as fh:
         return np.asarray(Image.open(fh).convert("RGB"))
+
+
+def ensure_previews(doc: UploadedDocument) -> None:
+    """Для документов, обработанных до появления превью, — сгенерировать их лениво."""
+    pr = doc.result
+    if pr.preview_image and pr.original_preview:
+        return
+    if not pr.preview_image:
+        pr.preview_image.save(f"{doc.id}/preview.jpg", ContentFile(_jpeg_preview(normalized_rgb(doc))), save=False)
+    if not pr.original_preview:
+        try:
+            from dekanat_core.io.loader import load_bytes
+
+            with doc.file.open("rb") as fh:
+                rgb = load_bytes(fh.read(), doc.original_name, first_page_only=True).rgb
+            pr.original_preview.save(f"{doc.id}/original_preview.jpg", ContentFile(_jpeg_preview(rgb)), save=False)
+        except Exception:  # pragma: no cover
+            pr.original_preview.save(f"{doc.id}/original_preview.jpg", ContentFile(_jpeg_preview(normalized_rgb(doc))), save=False)
+    pr.save()
 
 
 @transaction.atomic
@@ -159,9 +198,8 @@ def annotated_png(doc: UploadedDocument, only_key: str | None = None) -> bytes:
         x1, y1, x2, y2 = fv.bbox
         pad = max(4, (y2 - y1) // 4)
         draw.rectangle([x1 - pad, y1 - pad, x2 + pad, y2 + pad], outline=_color(fv), width=w)
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
+    img.thumbnail((1800, 1800), Image.LANCZOS)
+    return _jpeg_bytes(img, 85)
 
 
 def crop_png(doc: UploadedDocument, key: str, context: float = 0.6) -> bytes | None:
@@ -183,9 +221,8 @@ def crop_png(doc: UploadedDocument, key: str, context: float = 0.6) -> bytes | N
     bx1, by1, bx2, by2 = fv.bbox
     pad = max(3, h // 4)
     draw.rectangle([bx1 - cx1 - pad, by1 - cy1 - pad, bx2 - cx1 + pad, by2 - cy1 + pad], outline=_color(fv), width=3)
-    buf = io.BytesIO()
-    crop.save(buf, format="PNG")
-    return buf.getvalue()
+    crop.thumbnail((1200, 1200), Image.LANCZOS)
+    return _jpeg_bytes(crop, 88)
 
 
 def export_json(doc: UploadedDocument, document_id: str | None = None) -> dict:

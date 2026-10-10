@@ -48,6 +48,8 @@ class ProcessingResult(models.Model):
     document = models.OneToOneField(UploadedDocument, on_delete=models.CASCADE, related_name="result")
     result = models.JSONField(default=dict)              # DocumentResult.to_dict()
     normalized_image = models.ImageField(upload_to="uploads/", blank=True)
+    preview_image = models.ImageField(upload_to="uploads/", blank=True)          # лёгкий JPEG для просмотра
+    original_preview = models.ImageField(upload_to="uploads/", blank=True)       # лёгкий JPEG исходного снимка
     transform = models.JSONField(default=list, blank=True)  # 3x3 матрица исходные->нормализованные
     original_size = models.JSONField(default=list, blank=True)
     updated_at = models.DateTimeField(auto_now=True)

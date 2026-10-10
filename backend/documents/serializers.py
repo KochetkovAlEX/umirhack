@@ -50,6 +50,8 @@ class DocumentSerializer(serializers.ModelSerializer):
         base = request.build_absolute_uri("/")[:-1] if request else ""
         return {
             "original": f"{base}/api/v1/documents/{obj.id}/image?variant=original",
+            "original_preview": f"{base}/api/v1/documents/{obj.id}/image?variant=original_preview",
             "normalized": f"{base}/api/v1/documents/{obj.id}/image?variant=normalized",
+            "preview": f"{base}/api/v1/documents/{obj.id}/image?variant=preview",
             "annotated": f"{base}/api/v1/documents/{obj.id}/annotated.png",
         }

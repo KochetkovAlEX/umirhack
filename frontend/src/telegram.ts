@@ -13,6 +13,27 @@ interface TgWebApp {
   BackButton?: { show: () => void; hide: () => void; onClick: (cb: () => void) => void; offClick: (cb: () => void) => void }
   onEvent?: (ev: string, cb: () => void) => void
   isExpanded?: boolean
+  version?: string
+  openLink?: (url: string, opts?: { try_instant_view?: boolean }) => void
+  downloadFile?: (params: { url: string; file_name: string }, cb?: (accepted: boolean) => void) => void
+  isVersionAtLeast?: (v: string) => boolean
+}
+
+/** Скачать файл: в Telegram <a download> не работает — используем WebApp.downloadFile (Bot API 8.0+) или openLink. */
+export function downloadFile(url: string, fileName: string): boolean {
+  const w = tg()
+  if (!w) return false
+  const abs = new URL(url, window.location.origin).toString()
+  try {
+    if (w.downloadFile && (!w.isVersionAtLeast || w.isVersionAtLeast('8.0'))) {
+      w.downloadFile({ url: abs, file_name: fileName })
+      return true
+    }
+    w.openLink?.(abs)
+    return true
+  } catch {
+    return false
+  }
 }
 
 declare global {

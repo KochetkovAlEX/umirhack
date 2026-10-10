@@ -65,7 +65,7 @@ export interface Doc {
   created_at: string
   result: DocResult | null
   questions: QA[]
-  images: { original: string; normalized: string; annotated: string }
+  images: { original: string; original_preview: string; normalized: string; preview: string; annotated: string }
   answer?: QA | null
 }
 
@@ -124,7 +124,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ doc_type: docType }),
     }).then((r) => handle<Doc>(r)),
-  exportUrl: (id: string) => `${BASE}/documents/${id}/export.json`,
+  exportUrl: (id: string) => `${BASE}/documents/${id}/export.json?download=1`,
   cropUrl: (id: string, key: string) => `${BASE}/documents/${id}/fields/${key}/crop.png`,
 }
 

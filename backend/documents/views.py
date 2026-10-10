@@ -132,15 +132,26 @@ class FieldBoxesView(APIView):
         return Response(services.field_boxes(_doc(pk)))
 
 
+IMMUTABLE = "public, max-age=31536000, immutable"
+
+
 class ImageView(View):
     def get(self, request, pk):
         doc = _doc(pk)
-        variant = request.GET.get("variant", "normalized")
+        variant = request.GET.get("variant", "preview")
         if variant == "original":
-            return FileResponse(doc.file.open("rb"), content_type=doc.mime or "application/octet-stream")
-        if not hasattr(doc, "result") or not doc.result.normalized_image:
-            raise Http404
-        return FileResponse(doc.result.normalized_image.open("rb"), content_type="image/png")
+            resp = FileResponse(doc.file.open("rb"), content_type=doc.mime or "application/octet-stream")
+        else:
+            if not hasattr(doc, "result") or not doc.result.normalized_image:
+                raise Http404
+            if variant == "normalized":
+                resp = FileResponse(doc.result.normalized_image.open("rb"), content_type="image/png")
+            else:
+                services.ensure_previews(doc)
+                f = doc.result.original_preview if variant == "original_preview" else doc.result.preview_image
+                resp = FileResponse(f.open("rb"), content_type="image/jpeg")
+        resp["Cache-Control"] = IMMUTABLE
+        return resp
 
 
 class AnnotatedView(View):
@@ -148,7 +159,9 @@ class AnnotatedView(View):
         doc = _doc(pk)
         if doc.status != UploadedDocument.Status.DONE:
             raise Http404
-        return HttpResponse(services.annotated_png(doc, request.GET.get("field")), content_type="image/png")
+        resp = HttpResponse(services.annotated_png(doc, request.GET.get("field")), content_type="image/jpeg")
+        resp["Cache-Control"] = IMMUTABLE
+        return resp
 
 
 class CropView(View):
@@ -157,12 +170,20 @@ class CropView(View):
         data = services.crop_png(doc, key)
         if data is None:
             raise Http404("Для этого поля нет координат")
-        return HttpResponse(data, content_type="image/png")
+        resp = HttpResponse(data, content_type="image/jpeg")
+        resp["Cache-Control"] = IMMUTABLE
+        return resp
 
 
 class ExportView(APIView):
     def get(self, request, pk):
-        return Response(services.export_json(_doc(pk)))
+        import json as _json
+
+        data = services.export_json(_doc(pk))
+        resp = HttpResponse(_json.dumps(data, ensure_ascii=False, indent=2), content_type="application/json; charset=utf-8")
+        if request.GET.get("download"):
+            resp["Content-Disposition"] = 'attachment; filename="%s.json"' % pk
+        return resp
 
 
 class SpaView(View):

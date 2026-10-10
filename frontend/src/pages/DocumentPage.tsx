@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, Loader2, RefreshCw, Search, Send, Upload } from 'lucide-react'
 import { api, type Doc, type QA, SUGGESTED_QUESTIONS } from '../api'
+import { downloadFile, inTelegram } from '../telegram'
 import ImageViewer from '../components/ImageViewer'
 import AnswerCard from '../components/AnswerCard'
 import FieldsTable from '../components/FieldsTable'
@@ -84,13 +85,13 @@ export default function DocumentPage() {
           </div>
         </div>
         <ImageViewer
-          src={variant === 'normalized' ? doc.data.images.normalized : doc.data.images.original}
+          src={variant === 'normalized' ? doc.data.images.preview : doc.data.images.original_preview}
           size={variant === 'normalized' ? result.image_size : result.original_size}
           fields={fields}
           transform={variant === 'original' ? result.transform : null}
           highlight={highlight}
           onSelect={setHighlight}
-          isPdfOriginal={variant === 'original' && doc.data.mime === 'application/pdf'}
+          isPdfOriginal={false}
         />
         <div className="mt-2 flex flex-wrap gap-3 px-1 text-xs text-ink-500">
           <span><i className="inline-block w-3 h-3 rounded-sm bg-brand-500 mr-1 align-middle" />поле найдено</span>
@@ -188,8 +189,25 @@ export default function DocumentPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <a className="btn-ghost" href={api.exportUrl(id)} download={`${id}.json`}><Download size={16} /> Скачать JSON</a>
-          <button className="btn-ghost" onClick={() => doc.refetch()}><RefreshCw size={16} /> Обновить</button>
+          {inTelegram() ? (
+            <button className="btn-ghost" onClick={() => downloadFile(api.exportUrl(id), `${id}.json`)}>
+              <Download size={16} /> Скачать JSON
+            </button>
+          ) : (
+            <a className="btn-ghost" href={api.exportUrl(id)} download={`${id}.json`}><Download size={16} /> Скачать JSON</a>
+          )}
+          <button
+            className="btn-ghost"
+            disabled={doc.isFetching}
+            onClick={async () => {
+              setHighlight(null)
+              const r = await doc.refetch()
+              if (r.data) setHistory(r.data.questions ?? [])
+            }}
+          >
+            {doc.isFetching ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+            {doc.isFetching ? 'Обновляем…' : 'Обновить'}
+          </button>
           <button className="btn-primary ml-auto" onClick={() => navigate('/')}><Upload size={16} /> Другой документ</button>
         </div>
       </section>
