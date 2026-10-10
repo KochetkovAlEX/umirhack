@@ -39,7 +39,7 @@ export default function AnswerCard({ qa, fields, docId, onSelect, highlighted }:
             )}
           </div>
           {showCrop && (
-            <img src={api.cropUrl(docId, qa.field_key)} alt="фрагмент снимка" className="mt-3 max-h-40 rounded-lg border border-ink-200 bg-white" />
+            <img src={api.cropUrl(docId, qa.field_key)} alt="фрагмент снимка" className="mt-3 max-h-40 rounded-lg border border-ink-200 bg-surface" />
           )}
         </div>
       </div>

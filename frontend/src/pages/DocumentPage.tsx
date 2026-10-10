@@ -168,7 +168,7 @@ export default function DocumentPage() {
                     <Search size={12} /> Проверить комплектность
                   </button>
                   {SUGGESTED_QUESTIONS.filter((q) => !q.startsWith('Содержит')).map((q) => (
-                    <button key={q} className="chip border-ink-300 bg-white hover:bg-ink-100" onClick={() => ask.mutate(q)}>{q}</button>
+                    <button key={q} className="chip border-ink-300 bg-surface hover:bg-ink-100" onClick={() => ask.mutate(q)}>{q}</button>
                   ))}
                 </div>
               </div>

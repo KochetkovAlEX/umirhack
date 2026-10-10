@@ -32,7 +32,7 @@ export default function SourceChip({ source, fields, onSelect }: Props) {
         <BookOpen size={12} /> п. {rid} Положения
       </button>
       {open && (
-        <div className="absolute z-30 left-0 top-full mt-1 w-80 max-w-[85vw] rounded-xl border border-ink-200 bg-white p-3 text-xs shadow-lg">
+        <div className="absolute z-30 left-0 top-full mt-1 w-80 max-w-[85vw] rounded-xl border border-ink-200 bg-surface p-3 text-xs shadow-lg">
           <div className="font-semibold mb-1">Пункт {rid}</div>
           <div className="text-ink-700">{text ?? 'Загрузка…'}</div>
           <Link to={`/rules#rule-${rid.replace('.', '-')}`} className="mt-2 inline-block text-brand-700 underline">

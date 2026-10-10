@@ -69,7 +69,7 @@ export default function UploadPage() {
               {preview ? (
                 <img src={preview} alt="превью" className="max-h-64 rounded-lg shadow" />
               ) : (
-                <div className="h-24 w-20 rounded-lg bg-white border flex items-center justify-center text-xs text-ink-500">PDF</div>
+                <div className="h-24 w-20 rounded-lg bg-surface border flex items-center justify-center text-xs text-ink-500">PDF</div>
               )}
               <div className="text-sm">
                 <b>{file.name}</b> · {(file.size / 1024).toFixed(0)} КБ
@@ -130,7 +130,7 @@ export default function UploadPage() {
             <button
               key={q}
               type="button"
-              className="chip border-ink-300 bg-white hover:bg-ink-100"
+              className="chip border-ink-300 bg-surface hover:bg-ink-100"
               onClick={() => setQuestion(q)}
             >
               {q}

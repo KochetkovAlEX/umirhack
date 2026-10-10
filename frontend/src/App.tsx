@@ -1,5 +1,7 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
-import { FileText, BookOpen, Info } from 'lucide-react'
+import { useState } from 'react'
+import { FileText, BookOpen, Info, Moon, Sun } from 'lucide-react'
+import { getTheme, setTheme, type Theme } from './theme'
 import UploadPage from './pages/UploadPage'
 import DocumentPage from './pages/DocumentPage'
 import RulesPage from './pages/RulesPage'
@@ -24,11 +26,30 @@ function Logo() {
   )
 }
 
+function ThemeToggle() {
+  const [theme, set] = useState<Theme>(() => getTheme())
+  const next: Theme = theme === 'dark' ? 'light' : 'dark'
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setTheme(next)
+        set(next)
+      }}
+      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-ink-300 text-ink-700 hover:border-brand-400 hover:text-brand-700 transition"
+      title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+      aria-label="Переключить тему"
+    >
+      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+    </button>
+  )
+}
+
 export default function App() {
   return (
     <div className="min-h-full flex flex-col">
       <div className="h-1 bg-gradient-to-r from-brand-500 via-brand-400 to-sun-400" />
-      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-ink-200">
+      <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur border-b border-ink-200">
         <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-3">
           <Logo />
           <nav className="flex items-center gap-1">
@@ -41,6 +62,8 @@ export default function App() {
             <NavLink to="/about" className={navCls}>
               <Info size={16} /> <span className="hidden sm:inline">О сервисе</span>
             </NavLink>
+            <span className="mx-1 h-6 w-px bg-ink-200" />
+            <ThemeToggle />
           </nav>
         </div>
       </header>
@@ -52,7 +75,7 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
         </Routes>
       </main>
-      <footer className="border-t border-ink-200 bg-white">
+      <footer className="border-t border-ink-200 bg-surface">
         <div className="mx-auto max-w-7xl px-4 py-5 grid gap-2 sm:grid-cols-[1fr_auto] text-xs text-ink-500">
           <div>
             <div className="text-ink-700 font-medium">Предварительная проверка по учебному Положению.</div>

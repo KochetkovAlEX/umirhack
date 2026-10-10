@@ -52,7 +52,7 @@ export default function ImageViewer({ src, size, fields, transform, highlight, o
       <TransformWrapper minScale={0.5} maxScale={6} wheel={{ step: 0.15 }} doubleClick={{ mode: 'reset' }}>
         <TransformComponent wrapperClass="!w-full !h-[70vh]" contentClass="!w-full">
           <div className="relative w-full" style={{ aspectRatio: `${w} / ${h}` }}>
-            <img src={src} alt="документ" className="absolute inset-0 w-full h-full object-contain select-none" draggable={false} />
+            <img src={src} alt="документ" className="doc-image absolute inset-0 w-full h-full object-contain select-none" draggable={false} />
             <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet">
               {fields
                 .filter((f) => f.bbox)
