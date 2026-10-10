@@ -9,6 +9,21 @@ NOT_FOUND = "не найдено"
 BBox = tuple[int, int, int, int]  # x1, y1, x2, y2 в пикселях нормализованного изображения
 
 
+def to_jsonable(obj):
+    """Рекурсивно превратить numpy-скаляры/массивы в обычные типы Python (для JSON)."""
+    import numpy as np
+
+    if isinstance(obj, dict):
+        return {str(k): to_jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [to_jsonable(v) for v in obj]
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, np.generic):
+        return obj.item()
+    return obj
+
+
 @dataclass
 class OcrLine:
     text: str
@@ -30,7 +45,7 @@ class FieldValue:
     kind: str = "text"              # text | mark
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        return to_jsonable(asdict(self))
 
 
 @dataclass
@@ -41,7 +56,7 @@ class Validation:
     message: str = ""
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        return to_jsonable(asdict(self))
 
 
 @dataclass
@@ -64,7 +79,7 @@ class Answer:
         }
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        return to_jsonable(asdict(self))
 
 
 @dataclass
@@ -87,8 +102,27 @@ class DocumentResult:
         """Поля в формате results.json."""
         return {k: v.value for k, v in self.fields.items()}
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "DocumentResult":
+        fields = {k: FieldValue(**{**v, "bbox": tuple(v["bbox"]) if v.get("bbox") else None,
+                                   "label_bbox": tuple(v["label_bbox"]) if v.get("label_bbox") else None})
+                  for k, v in d["fields"].items()}
+        v = d["validation"]
+        return cls(
+            doc_type=d["doc_type"], doc_type_title=d.get("doc_type_title", ""),
+            type_confidence=d.get("type_confidence", 1.0), type_auto=d.get("type_auto", False),
+            fields=fields,
+            validation=Validation(status=v["status"], missing_fields=list(v["missing_fields"]),
+                                  sources=list(v["sources"]), message=v.get("message", "")),
+            ocr_text=d.get("ocr_text", ""),
+            ocr_lines=[OcrLine(text=l["text"], bbox=tuple(l["bbox"]), conf=l.get("conf", 0.0), engine=l.get("engine", ""))
+                       for l in d.get("ocr_lines", [])],
+            image_size=tuple(d.get("image_size", (0, 0))), quality=d.get("quality", {}), timings=d.get("timings", {}),
+            warnings=list(d.get("warnings", [])), type_candidates=list(d.get("type_candidates", [])),
+        )
+
     def to_dict(self) -> dict:
-        return {
+        return to_jsonable({
             "doc_type": self.doc_type,
             "doc_type_title": self.doc_type_title,
             "type_confidence": self.type_confidence,
@@ -102,4 +136,4 @@ class DocumentResult:
             "quality": self.quality,
             "timings": self.timings,
             "warnings": self.warnings,
-        }
+        })
