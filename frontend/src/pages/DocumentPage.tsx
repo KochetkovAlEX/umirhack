@@ -94,7 +94,7 @@ export default function DocumentPage() {
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_1fr] xl:grid-cols-[1.05fr_1fr]">
       {/* ---------- снимок ---------- */}
-      <section className="card p-3 lg:sticky lg:top-20 self-start">
+      <section className="card p-3 sm:p-4 lg:sticky lg:top-[86px] self-start">
         <div className="flex items-center justify-between gap-2 px-1 pb-2">
           <div className="text-sm text-ink-600 truncate">{doc.data.original_name}</div>
           <div className="flex gap-1 text-xs">
@@ -121,7 +121,7 @@ export default function DocumentPage() {
 
       {/* ---------- карточки ---------- */}
       <section className="space-y-4">
-        <div className="card p-4">
+        <div className="card p-5">
           <div className="flex flex-wrap items-center gap-2">
             <div>
               <div className="text-xs text-ink-500">Тип документа {result.type_auto && '(определён автоматически)'}</div>
@@ -175,14 +175,14 @@ export default function DocumentPage() {
         <ValidationCard validation={result.validation} fields={result.fields} onSelect={setHighlight} />
 
         <div className="card">
-          <div className="flex border-b border-ink-200 text-sm">
+          <div role="tablist" className="flex gap-6 px-5 pt-4 border-b border-ink-200 overflow-x-auto no-scrollbar">
             {([['answer', 'Ответы'], ['fields', 'Карточка полей'], ['ocr', 'Распознанный текст']] as [Tab, string][]).map(([k, t]) => (
-              <button key={k} onClick={() => setTab(k)} className={`px-4 py-2.5 font-medium ${tab === k ? 'border-b-2 border-brand-500 text-ink-900' : 'text-ink-500 hover:text-ink-800'}`}>
+              <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className="tab-upper !text-[14px] !pb-3.5">
                 {t}
               </button>
             ))}
           </div>
-          <div className="p-4">
+          <div className="p-5">
             {tab === 'answer' && (
               <div className="space-y-3">
                 {history.length === 0 && (
@@ -192,7 +192,8 @@ export default function DocumentPage() {
                   <AnswerCard key={qa.id} qa={qa} fields={result.fields} docId={id} onSelect={setHighlight} highlighted={last?.id === qa.id} />
                 ))}
                 <form
-                  className="pt-2 flex gap-2"
+                  id="ask"
+                  className="pt-2 flex gap-2 scroll-mt-28"
                   onSubmit={(e) => {
                     e.preventDefault()
                     if (question.trim()) ask.mutate(question.trim())
@@ -216,7 +217,7 @@ export default function DocumentPage() {
             {tab === 'fields' && <FieldsTable fields={result.fields} highlight={highlight} onSelect={setHighlight} docId={id} />}
             {tab === 'ocr' && (
               <div>
-                <pre className="whitespace-pre-wrap text-xs leading-5 bg-ink-50 rounded-xl p-3 max-h-96 overflow-auto">{result.ocr_text}</pre>
+                <pre className="whitespace-pre-wrap text-xs leading-5 bg-surface rounded-xl p-3 max-h-96 overflow-auto">{result.ocr_text}</pre>
                 <div className="mt-2 text-xs text-ink-500">
                   OCR: {String((result.quality as { ocr?: { engines?: string[] } })?.ocr?.engines?.join(' + ') ?? '')} · предобработка:{' '}
                   {String(((result.quality as { steps?: string[] })?.steps ?? []).join(', ') || 'не требовалась')} · время:{' '}

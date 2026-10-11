@@ -36,20 +36,29 @@
   --color-ink-900: #232323;
 
   --color-surface: #ffffff;
+  /* серые скруглённые плашки на белом фоне, как блоки на сайте банка */
+  --color-panel: #f4f5f7;
 
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
 }
 
 :root {
   color-scheme: light;
-  --paper: #f8f9fc;
+  --paper: #ffffff;
+  --hero-from: #e8e9eb;
+  --hero-via: #f4f4f4;
+  --hero-to: #ebeced;
 }
 
 /* Тёмная тема: переопределяем палитру — компоненты используют те же токены. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #121417;
-  --color-surface: #1b1e24;
+  --paper: #111316;
+  --color-surface: #1f2329;
+  --color-panel: #181b20;
+  --hero-from: #1a1d22;
+  --hero-via: #22262d;
+  --hero-to: #1c1f25;
 
   --color-ink-50: #22262d;
   --color-ink-100: #272b33;
@@ -111,17 +120,30 @@ img.doc-image { transition: filter .2s ease; }
 h1, h2, h3 { letter-spacing: -0.02em; }
 
 @layer components {
-  .card { @apply bg-surface rounded-2xl border border-ink-200 shadow-[0_1px_2px_rgba(35,35,35,0.04)]; }
-  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700; }
-  .btn-accent { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700 shadow-[0_6px_16px_rgba(80,184,72,0.35)]; }
-  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed bg-surface border border-ink-300 text-ink-800 hover:border-brand-400 hover:text-brand-700; }
+  .container-x { @apply mx-auto w-full max-w-[1360px] px-4 sm:px-6 lg:px-[88px]; }
+  .card { @apply bg-panel rounded-3xl; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[15px] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700; }
+  .btn-accent { @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[15px] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[15px] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed bg-transparent border border-brand-500 text-ink-900 hover:bg-brand-50; }
+  .btn-lg { @apply h-14 px-10 text-lg; }
   .chip { @apply inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium; }
-  .input { @apply w-full rounded-xl border border-ink-300 bg-surface px-3 py-2.5 text-sm text-ink-800 outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-500; }
+  .input { @apply w-full rounded-xl border border-ink-300 bg-surface px-3.5 py-3 text-[15px] text-ink-800 outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-500; }
+  /* вкладки в верхнем регистре, как «Популярные / Вклад / Промо» */
+  .tab-upper { @apply relative pb-3 text-[15px] sm:text-[17px] uppercase tracking-wide whitespace-nowrap transition text-ink-500 hover:text-ink-900; }
+  .tab-upper[aria-selected="true"] { @apply text-ink-900; }
+  .tab-upper[aria-selected="true"]::after { content: ""; @apply absolute left-0 right-0 bottom-0 h-[3px] rounded-full bg-brand-500; }
+  .section-title { @apply text-[32px] sm:text-[44px] leading-tight font-medium text-ink-900; }
+  .hero-bg { background: linear-gradient(100deg, var(--hero-from) 0%, var(--hero-via) 55%, var(--hero-to) 100%); }
 }
 
+@keyframes fade-in { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
 @keyframes pulse-ring { 0% { opacity: .9 } 50% { opacity: .35 } 100% { opacity: .9 } }
 .box-highlight { animation: pulse-ring 1.2s ease-in-out infinite; }
 
 /* Внутри Telegram Mini App: компактная шапка, нижний отступ под системные кнопки */
 :root[data-tg="1"] .tg-hide { display: none; }
 :root[data-tg="1"] main { padding-bottom: 2.5rem; }
+
+/* скрытая полоса прокрутки у горизонтальных меню/вкладок на узких экранах */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

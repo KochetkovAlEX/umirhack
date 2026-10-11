@@ -11,7 +11,7 @@ interface Props {
 export default function ValidationCard({ validation, fields, onSelect }: Props) {
   const ok = validation.status === 'document_ok'
   return (
-    <div className={`card p-4 border-l-4 ${ok ? 'border-l-green-500' : 'border-l-amber-500'}`}>
+    <div className={`rounded-3xl p-5 ${ok ? 'bg-green-50' : 'bg-amber-50'}`}>
       <div className="flex items-start gap-2">
         {ok ? <CheckCircle2 className="text-green-600 shrink-0" /> : <AlertTriangle className="text-amber-600 shrink-0" />}
         <div className="flex-1">
