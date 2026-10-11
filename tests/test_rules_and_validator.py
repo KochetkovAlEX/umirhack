@@ -25,6 +25,18 @@ def test_doc_types_loaded():
     assert types["academic_leave_application"].not_required == {"seal": "4.3"}
 
 
+def test_custom_type_from_config():
+    """Пользовательский тип добавляется YAML-файлом без кода (config/doc_types/transfer_application.yaml)."""
+    cfg = load_doc_types()["transfer_application"]
+    assert cfg.title == "Заявление о переводе"
+    assert [f.key for f in cfg.fields] == ["student_name", "current_university", "target_program", "application_date", "signature_present"]
+    assert cfg.complete_message_rules == ["4.1", "4.2"] and cfg.not_required == {"seal": "4.3"}
+    v = validate(cfg, _fields(cfg, set()))
+    assert v.status == "document_ok" and v.sources == ["rule:4.1", "rule:4.2"]
+    v = validate(cfg, _fields(cfg, {"application_date", "signature_present"}))
+    assert set(v.missing_fields) == {"application_date", "signature_present"} and v.sources == ["rule:4.1", "rule:4.2"]
+
+
 def _fields(cfg, missing: set[str]) -> dict[str, FieldValue]:
     out = {}
     for spec in cfg.fields:

@@ -163,6 +163,19 @@ def test_invariants_on_many_questions():
                 assert a.value is None
 
 
+def test_custom_type_questions():
+    tr = get_doc_type("transfer_application")
+    r = make_result(tr, {"current_university": "Учебный университет «Север»", "target_program": "09.03.04 Программная инженерия"})
+    a = answer_question(r, tr, "Укажи значение поля «Текущий вуз».")
+    assert a.value == "Учебный университет «Север»" and a.sources == ["field:current_university"]
+    b = answer_question(r, tr, "На какое направление переводится студент?")
+    assert b.sources == ["field:target_program"]
+    c = answer_question(r, tr, "Нужна ли печать на заявлении?")
+    assert c.answerable and c.sources == ["rule:4.3"]
+    d = answer_question(r, tr, "Содержит ли документ все обязательные сведения?")
+    assert d.value == "document_ok" and d.sources == ["rule:4.1", "rule:4.2"]
+
+
 def test_classify_returns_intent():
     assert classify_question("Кто принимает решение?", SC).kind == "decision"
     assert classify_question("Какова стоимость обучения?", SC).kind == "no_info"

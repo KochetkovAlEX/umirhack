@@ -1,0 +1,173 @@
+{
+  "version": "1.0",
+  "documents": [
+    {
+      "document_id": "transfer-001",
+      "document_type": "transfer_application",
+      "fields": {
+        "student_name": "Тарасова Алина Олеговна",
+        "current_university": "Учебный университет «Север»",
+        "target_program": "09.03.04 Программная инженерия",
+        "application_date": "2026-10-08",
+        "signature_present": true
+      },
+      "validation": {
+        "status": "document_ok",
+        "missing_fields": [],
+        "sources": [
+          "rule:4.1",
+          "rule:4.2"
+        ]
+      },
+      "answers": [
+        {
+          "question_id": "transfer-001-Q1",
+          "answerable": true,
+          "value": "document_ok",
+          "answer": "эталон",
+          "sources": [
+            "rule:4.1",
+            "rule:4.2"
+          ]
+        },
+        {
+          "question_id": "transfer-001-Q2",
+          "answerable": true,
+          "value": "Тарасова Алина Олеговна",
+          "answer": "эталон",
+          "sources": [
+            "field:student_name"
+          ]
+        },
+        {
+          "question_id": "transfer-001-Q3",
+          "answerable": true,
+          "value": "сотрудник деканата",
+          "answer": "эталон",
+          "sources": [
+            "rule:1.3"
+          ]
+        },
+        {
+          "question_id": "transfer-001-Q4",
+          "answerable": false,
+          "value": null,
+          "answer": "эталон",
+          "sources": []
+        }
+      ]
+    },
+    {
+      "document_id": "transfer-002",
+      "document_type": "transfer_application",
+      "fields": {
+        "student_name": "Макаров Егор Олегович",
+        "current_university": "Учебный университет «Эверест»",
+        "target_program": "40.03.01 Юриспруденция",
+        "application_date": "не найдено",
+        "signature_present": true
+      },
+      "validation": {
+        "status": "missing_fields",
+        "missing_fields": [
+          "application_date"
+        ],
+        "sources": [
+          "rule:4.1"
+        ]
+      },
+      "answers": [
+        {
+          "question_id": "transfer-002-Q1",
+          "answerable": true,
+          "value": "missing_fields",
+          "answer": "эталон",
+          "sources": [
+            "rule:4.1"
+          ]
+        },
+        {
+          "question_id": "transfer-002-Q2",
+          "answerable": true,
+          "value": "Учебный университет «Эверест»",
+          "answer": "эталон",
+          "sources": [
+            "field:current_university"
+          ]
+        },
+        {
+          "question_id": "transfer-002-Q3",
+          "answerable": true,
+          "value": "сотрудник деканата",
+          "answer": "эталон",
+          "sources": [
+            "rule:1.3"
+          ]
+        },
+        {
+          "question_id": "transfer-002-Q4",
+          "answerable": false,
+          "value": null,
+          "answer": "эталон",
+          "sources": []
+        }
+      ]
+    },
+    {
+      "document_id": "transfer-003",
+      "document_type": "transfer_application",
+      "fields": {
+        "student_name": "Соколова Елена Ивановна",
+        "current_university": "Учебный институт «Логос»",
+        "target_program": "01.03.02 Прикладная математика и информатика",
+        "application_date": "2026-09-25",
+        "signature_present": false
+      },
+      "validation": {
+        "status": "missing_fields",
+        "missing_fields": [
+          "signature_present"
+        ],
+        "sources": [
+          "rule:4.2"
+        ]
+      },
+      "answers": [
+        {
+          "question_id": "transfer-003-Q1",
+          "answerable": true,
+          "value": "missing_fields",
+          "answer": "эталон",
+          "sources": [
+            "rule:4.2"
+          ]
+        },
+        {
+          "question_id": "transfer-003-Q2",
+          "answerable": true,
+          "value": "01.03.02 Прикладная математика и информатика",
+          "answer": "эталон",
+          "sources": [
+            "field:target_program"
+          ]
+        },
+        {
+          "question_id": "transfer-003-Q3",
+          "answerable": true,
+          "value": "сотрудник деканата",
+          "answer": "эталон",
+          "sources": [
+            "rule:1.3"
+          ]
+        },
+        {
+          "question_id": "transfer-003-Q4",
+          "answerable": false,
+          "value": null,
+          "answer": "эталон",
+          "sources": []
+        }
+      ]
+    }
+  ]
+}

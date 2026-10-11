@@ -85,13 +85,18 @@ def run(args) -> dict:
     if args.debug:
         Path(args.debug).write_text(json.dumps(debug, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # проверка схемы
+    # проверка схемы организаторов: она описывает только официальные типы; документы пользовательских
+    # типов (добавленных через config/doc_types) при проверке схемы пропускаются
     try:
         import jsonschema
 
         schema = json.loads((Path(args.schema) if args.schema else ROOT / "data" / "results.schema.json").read_text(encoding="utf-8"))
-        jsonschema.validate(results, schema)
-        print("Схема results.schema.json: OK")
+        official = {opt["properties"]["document_type"]["const"] for opt in schema["properties"]["documents"]["items"]["oneOf"]}
+        checked = [d for d in out_docs if d["document_type"] in official]
+        skipped = len(out_docs) - len(checked)
+        jsonschema.validate({"version": "1.0", "documents": checked}, schema)
+        note = f" (пропущено документов пользовательских типов: {skipped})" if skipped else ""
+        print(f"Схема results.schema.json: OK{note}")
     except Exception as exc:
         print(f"Схема: ОШИБКА {exc}")
 

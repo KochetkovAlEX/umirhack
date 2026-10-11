@@ -88,6 +88,9 @@ def gen_values(doc_type: str, rng) -> tuple[dict, dict]:
         vals = {"student_name": fio(rng), "group": rng.choice(GROUPS), "course": str(rng.randrange(1, 5)),
                 "leave_reason": rng.choice(REASONS), "leave_start": ls, "leave_end": date(2027, 8, 31),
                 "application_date": today}
+    elif doc_type == "transfer_application":
+        vals = {"student_name": fio(rng), "current_university": rng.choice(UNIS),
+                "target_program": rng.choice(PROGRAMS), "application_date": today}
     else:
         st = date(2026, 6, 1 + rng.randrange(20))
         vals = {"student_name": fio(rng), "organization": rng.choice(ORGS), "internship_start": st,
@@ -104,7 +107,9 @@ TITLES = {"study_certificate": ("СПРАВКА ОБ ОБУЧЕНИИ", "Све�
           "academic_leave_application": ("ЗАЯВЛЕНИЕ НА АКАДЕМИЧЕСКИЙ ОТПУСК", "Прошу предоставить академический отпуск на указанный период.",
                                          "В деканат учебного университета «Меридиан»", "Подпись студента:"),
           "internship_certificate": ("СПРАВКА О ПРАКТИКЕ", "Сведения о прохождении практики приведены ниже.",
-                                     "Учебный документооборот / отдел сопровождения студентов", "Подпись руководителя:")}
+                                     "Учебный документооборот / отдел сопровождения студентов", "Подпись руководителя:"),
+          "transfer_application": ("ЗАЯВЛЕНИЕ О ПЕРЕВОДЕ", "Прошу перевести меня на указанное направление подготовки.",
+                                   "В деканат учебного университета «Меридиан»", "Подпись студента:")}
 
 
 def draw_signature(draw, x, y, rng):
@@ -170,21 +175,33 @@ def main():
     p.add_argument("--n", type=int, default=15)
     p.add_argument("--out", default="data/synth")
     p.add_argument("--seed", type=int, default=7)
+    p.add_argument("--types", default="study_certificate,academic_leave_application,internship_certificate",
+                   help="ключи типов через запятую (например, transfer_application для демо нового типа)")
+    p.add_argument("--prefix", default="synth", help="префикс идентификаторов документов")
+    p.add_argument("--missing", default=None,
+                   help="явный план пропусков через ';' по документам, например 'none;application_date;signature_present'")
     args = p.parse_args()
     rng = random.Random(args.seed)
     out = ROOT / args.out
     (out / "documents").mkdir(parents=True, exist_ok=True)
     types = load_doc_types()
-    keys = ["study_certificate", "academic_leave_application", "internship_certificate"]
+    keys = [k.strip() for k in args.types.split(",") if k.strip()]
+    for k in keys:
+        if k not in types:
+            raise SystemExit(f"Неизвестный тип {k}; доступны: {', '.join(types)}")
+    plan = [s.strip() for s in args.missing.split(";")] if args.missing else None
     manifest, questions, reference = [], [], []
     for i in range(args.n):
-        doc_type = keys[i % 3]
+        doc_type = keys[i % len(keys)]
         cfg = types[doc_type]
-        doc_id = f"synth-{i + 1:03d}"
+        doc_id = f"{args.prefix}-{i + 1:03d}"
         printed, truth = gen_values(doc_type, rng)
         all_keys = [f.key for f in cfg.fields]
-        n_missing = rng.choice([0, 0, 1, 1, 2])
-        missing = set(rng.sample(all_keys, n_missing))
+        if plan and i < len(plan):
+            missing = set() if plan[i] in ("", "none") else {k for k in plan[i].split(",") if k in all_keys}
+        else:
+            n_missing = rng.choice([0, 0, 1, 1, 2])
+            missing = set(rng.sample(all_keys, n_missing))
         img = render(doc_type, cfg, printed, missing, doc_id)
         img.save(out / "documents" / f"{doc_id}.png")
         img.save(out / "documents" / f"{doc_id}.pdf")

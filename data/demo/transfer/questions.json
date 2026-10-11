@@ -1,0 +1,62 @@
+[
+  {
+    "question_id": "transfer-001-Q1",
+    "document_id": "transfer-001",
+    "question": "Содержит ли документ все обязательные сведения по Положению?"
+  },
+  {
+    "question_id": "transfer-001-Q2",
+    "document_id": "transfer-001",
+    "question": "Укажи значение поля «ФИО студента»."
+  },
+  {
+    "question_id": "transfer-001-Q3",
+    "document_id": "transfer-001",
+    "question": "Кто принимает окончательное решение о принятии документа?"
+  },
+  {
+    "question_id": "transfer-001-Q4",
+    "document_id": "transfer-001",
+    "question": "По какому номеру телефона можно связаться с деканатом?"
+  },
+  {
+    "question_id": "transfer-002-Q1",
+    "document_id": "transfer-002",
+    "question": "Содержит ли документ все обязательные сведения по Положению?"
+  },
+  {
+    "question_id": "transfer-002-Q2",
+    "document_id": "transfer-002",
+    "question": "Укажи значение поля «Текущий вуз»."
+  },
+  {
+    "question_id": "transfer-002-Q3",
+    "document_id": "transfer-002",
+    "question": "Кто принимает окончательное решение о принятии документа?"
+  },
+  {
+    "question_id": "transfer-002-Q4",
+    "document_id": "transfer-002",
+    "question": "Какой размер стипендии положен студенту?"
+  },
+  {
+    "question_id": "transfer-003-Q1",
+    "document_id": "transfer-003",
+    "question": "Содержит ли документ все обязательные сведения по Положению?"
+  },
+  {
+    "question_id": "transfer-003-Q2",
+    "document_id": "transfer-003",
+    "question": "Укажи значение поля «Желаемое направление»."
+  },
+  {
+    "question_id": "transfer-003-Q3",
+    "document_id": "transfer-003",
+    "question": "Кто принимает окончательное решение о принятии документа?"
+  },
+  {
+    "question_id": "transfer-003-Q4",
+    "document_id": "transfer-003",
+    "question": "По какому номеру телефона можно связаться с деканатом?"
+  }
+]
