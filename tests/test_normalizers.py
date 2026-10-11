@@ -34,6 +34,12 @@ def test_person_name_homoglyphs():
     assert nz.normalize_person_name("Пaвлов Фёдор Дмитриевич") == "Павлов Фёдор Дмитриевич"
     assert nz.normalize_person_name("  иванов   борис николаевич ") == "Иванов Борис Николаевич"
     assert nz.normalize_person_name("ЖуковаПётр Андреевич") == "Жукова Пётр Андреевич"
+    # OCR-опечатки в имени/отчестве исправляются по словарю, фамилия не трогается
+    assert nz.normalize_person_name("Шестаков Олег Алексвевич") == "Шестаков Олег Алексеевич"
+    assert nz.normalize_person_name("Ильина Елена Андреевн") == "Ильина Елена Андреевна"
+    assert nz.normalize_person_name("Кузнецова Мария Сергеевна") == "Кузнецова Мария Сергеевна"
+    assert nz.normalize_person_name("Шестакав Олег Алексеевич") == "Шестакав Олег Алексеевич"  # фамилия как есть
+    assert nz.normalize_person_name("Александров Артём Игоревич") == "Александров Артём Игоревич"
     assert nz.normalize_person_name("Петрова-Иванова Анна Олеговна") == "Петрова-Иванова Анна Олеговна"
 
 

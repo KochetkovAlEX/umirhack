@@ -206,6 +206,17 @@ def soften_glare(rgb: np.ndarray) -> tuple[np.ndarray, bool]:
     return out, True
 
 
+# ---------- шум / муар ----------
+def noise_ratio(rgb: np.ndarray) -> float:
+    """Доля «чернильных» пикселей после адаптивного порога: у чистого листа ~0.01–0.03, у муара/зерна > 0.05."""
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    if max(gray.shape) > 1600:
+        k = 1600 / max(gray.shape)
+        gray = cv2.resize(gray, None, fx=k, fy=k, interpolation=cv2.INTER_AREA)
+    th = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 12)
+    return float(th.mean() / 255)
+
+
 # ---------- высота текста ----------
 def estimate_text_height(gray: np.ndarray) -> float:
     th = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
@@ -256,6 +267,14 @@ def run(rgb: np.ndarray) -> PreprocessResult:
             rgb, done = soften_glare(rgb)
             if done:
                 steps.append("glare")
+
+    # муар/шум (фото экрана, зернистые снимки): фон после адаптивного порога «чернильный» -> сглаживаем,
+    # сохраняя края (bilateral), иначе OCR путает буквы и детектор печати видит кольца в шуме
+    noise = noise_ratio(rgb)
+    quality["noise_ratio"] = round(noise, 4)
+    if cfg.get("enable_denoise", True) and noise > cfg.get("denoise_noise_threshold", 0.05):
+        rgb = cv2.bilateralFilter(rgb, 7, 60, 60)
+        steps.append(f"denoise (noise {noise:.2f})")
 
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     angle = estimate_skew(gray, cfg.get("deskew_max_angle", 30))

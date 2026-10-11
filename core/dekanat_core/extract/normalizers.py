@@ -152,6 +152,75 @@ def normalize_int(raw: str) -> str:
 
 
 # ---------------- ФИО ----------------
+# Словарь имён для коррекции OCR-опечаток в имени и отчестве (расстояние Левенштейна <= 1 до единственного
+# варианта). Это исправление ошибок распознавания, а не домысливание: фамилии не трогаем.
+_MALE_NAMES = """Александр Алексей Анатолий Андрей Антон Аркадий Арсений Артём Артем Артур Борис Вадим Валентин Валерий
+Василий Виктор Виталий Владимир Владислав Всеволод Вячеслав Геннадий Георгий Герман Глеб Григорий Даниил Данил Денис
+Дмитрий Евгений Егор Захар Иван Игорь Илья Кирилл Константин Лев Леонид Макар Максим Марк Матвей Михаил Никита Николай
+Олег Павел Пётр Петр Платон Роман Руслан Савелий Семён Семен Сергей Станислав Степан Тимофей Тимур Фёдор Федор Филипп
+Эдуард Юрий Яков Ярослав""".split()
+_FEMALE_NAMES = """Александра Алина Алла Анастасия Ангелина Анна Антонина Валентина Валерия Варвара Вера Вероника
+Виктория Галина Дарья Диана Евгения Екатерина Елена Елизавета Жанна Зинаида Злата Инна Ирина Карина Кира Кристина
+Ксения Лариса Лидия Лилия Любовь Людмила Маргарита Марина Мария Милана Надежда Наталья Наталия Нина Оксана Ольга
+Полина Раиса Регина София Софья光 Таисия Тамара Татьяна Ульяна Юлия Яна""".split()
+_FEMALE_NAMES = [n for n in _FEMALE_NAMES if n.isalpha() and n[0] in "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯ"]
+
+
+def _patronymics() -> set[str]:
+    out: set[str] = set()
+    for n in _MALE_NAMES:
+        base = n
+        if n.endswith(("й", "ь")):
+            stem = n[:-1]
+            out.update({stem + "евич", stem + "евна"})
+            if n.endswith("ий"):
+                out.update({n[:-2] + "ьевич", n[:-2] + "ьевна"})
+        elif n.endswith("а"):
+            stem = n[:-1]
+            out.update({stem + "ич", stem + "ична", stem + "инична"})
+        elif n[-1] in "ея":
+            out.update({base + "евич", base + "евна"})
+        else:
+            out.update({base + "ович", base + "овна"})
+    out.update({"Ильич", "Ильинична", "Львович", "Львовна", "Яковлевич", "Яковлевна", "Павлович", "Павловна"})
+    return out
+
+
+_PATRONYMICS = _patronymics()
+_FIRST_NAMES = set(_MALE_NAMES) | set(_FEMALE_NAMES)
+
+
+def _lev1(a: str, b: str) -> bool:
+    """Расстояние Левенштейна <= 1 (быстрая проверка)."""
+    if a == b:
+        return True
+    la, lb = len(a), len(b)
+    if abs(la - lb) > 1:
+        return False
+    if la == lb:
+        return sum(x != y for x, y in zip(a, b)) == 1
+    s, l_ = (a, b) if la < lb else (b, a)
+    i = j = 0
+    skipped = False
+    while i < len(s) and j < len(l_):
+        if s[i] == l_[j]:
+            i += 1
+            j += 1
+        elif skipped:
+            return False
+        else:
+            skipped = True
+            j += 1
+    return True
+
+
+def _correct_token(tok: str, lexicon: set[str]) -> str:
+    if tok in lexicon or len(tok) < 4:
+        return tok
+    cands = [w for w in lexicon if _lev1(tok, w)]
+    return cands[0] if len(cands) == 1 else tok
+
+
 def normalize_person_name(raw: str) -> str:
     s = clean_spaces(raw).translate(_LAT2CYR)
     s = re.sub(r"[^А-Яа-яЁё\-\s.]", "", s)
@@ -163,6 +232,10 @@ def normalize_person_name(raw: str) -> str:
         if not w:
             continue
         parts.append("-".join(p[:1].upper() + p[1:] for p in w.split("-")))
+    # «Фамилия Имя Отчество»: имя и отчество сверяем со словарём (опечатки OCR вроде «Алексвевич», «Андреевн»)
+    if len(parts) == 3:
+        parts[1] = _correct_token(parts[1], _FIRST_NAMES)
+        parts[2] = _correct_token(parts[2], _PATRONYMICS)
     return " ".join(parts)
 
 

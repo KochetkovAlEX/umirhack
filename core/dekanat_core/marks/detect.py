@@ -107,8 +107,9 @@ def detect_signature(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) ->
 def _ink_any_color(crop: np.ndarray) -> np.ndarray:
     """Чернила любого цвета: синие (цветная печать) ИЛИ тёмные относительно локального фона
     (чёрно-белая печать, фото с тенями)."""
-    gray = cv2.cvtColor(crop, cv2.COLOR_RGB2GRAY)
-    dark = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 12)
+    smooth = cv2.medianBlur(cv2.bilateralFilter(crop, 7, 60, 60), 3)  # подавляем муар/зерно, сохраняя линии
+    gray = cv2.cvtColor(smooth, cv2.COLOR_RGB2GRAY)
+    dark = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 41, 14)
     return cv2.bitwise_or(_blue_mask(crop), dark)
 
 
@@ -176,12 +177,14 @@ def detect_seal(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) -> Mark
                 blob = (x, y, w, h, area, circularity)
 
     ok, bbox, score = False, None, 0.0
-    min_cov = float(cfg.get("min_ring_coverage", 0.15))
+    # порог покрытия кольца растёт вместе с плотностью «чернил» в зоне: в шуме (муар) кольцо должно быть
+    # заметно плотнее фона, иначе случайные окружности Хафа дают ложную печать
+    min_cov = max(float(cfg.get("min_ring_coverage", 0.2)), 5.0 * ink_ratio)
     if best is not None and best[3] >= min_cov:
         cx, cy, r, ratio = best
         ok, score = True, ratio
         bbox = (rx1 + cx - r, ry1 + cy - r, rx1 + cx + r, ry1 + cy + r)
-    elif blob is not None:
+    elif blob is not None and ink_ratio < 0.06:
         x, y, w, h, area, circ = blob
         ok, score = True, float(min(1.0, circ))
         bbox = (rx1 + x, ry1 + y, rx1 + x + w, ry1 + y + h)
