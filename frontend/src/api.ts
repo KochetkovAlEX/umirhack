@@ -31,7 +31,7 @@ export interface DocResult {
   validation: Validation
   ocr_text: string
   image_size: [number, number]
-  quality: Record<string, unknown>
+  quality: Record<string, unknown> & { readability?: { mean_ocr_conf: number; labels_found_ratio: number; low_quality: boolean } }
   timings: Record<string, number>
   warnings: string[]
   type_mismatch: { detected: string; detected_title: string; score: number } | null

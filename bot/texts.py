@@ -30,22 +30,33 @@ HELP = (
 NO_DOC = "Сначала пришлите документ (фото или файл). /help — подсказка."
 
 
+LOW_CONF = 0.75
+
+
 def field_line(f: dict) -> str:
     if f["kind"] == "mark":
         return f"{'✅' if f['found'] else '❌'} {escape(f['label'])}: {'есть' if f['found'] else 'отсутствует'}"
+    if not f["found"]:
+        return f"⚠️ {escape(f['label'])}: <i>не найдено</i>"
     val = escape(str(f["value"]))
-    return f"{'✅' if f['found'] else '⚠️'} {escape(f['label'])}: <code>{val}</code>" if f["found"] else f"⚠️ {escape(f['label'])}: <i>не найдено</i>"
+    if (f.get("confidence") or 0) < LOW_CONF:
+        return f"❓ {escape(f['label'])}: <code>{val}</code> <i>(низкая уверенность OCR)</i>"
+    return f"✅ {escape(f['label'])}: <code>{val}</code>"
 
 
 def format_document(doc: dict) -> str:
     r = doc["result"]
     conf = f" (уверенность {r['type_confidence'] * 100:.0f}%)" if r.get("type_auto") else ""
     lines = [f"📄 <b>{escape(r['doc_type_title'])}</b>{conf}", ""]
+    if (r.get("quality") or {}).get("readability", {}).get("low_quality"):
+        lines += ["🚫 <b>Снимок низкого качества</b> — текст мелкий или нечёткий, результат ненадёжен. "
+                  "Переснимите документ ближе, ровно и при хорошем освещении (или пришлите скан/PDF).", ""]
     lines += [field_line(f) for f in r["fields"].values()]
     v = r["validation"]
     lines += ["", ("✅ " if v["status"] == "document_ok" else "⚠️ ") + "<b>Предварительная проверка</b>", escape(v["message"])]
-    if r.get("warnings"):
-        lines += ["", *("ℹ️ " + escape(w) for w in r["warnings"])]
+    extra = [w for w in (r.get("warnings") or []) if not w.startswith(("Снимок низкого качества", "Похоже, выбран"))]
+    if extra:
+        lines += ["", *("ℹ️ " + escape(w) for w in extra)]
     return "\n".join(lines)
 
 

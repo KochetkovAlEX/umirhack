@@ -38,6 +38,33 @@ def _label_score(candidate: str, spec: FieldSpec) -> float:
     return score
 
 
+def _split_by_label_prefix(ln: TextLine, cfg: DocTypeConfig, threshold: int):
+    """Строка без двоеточия: если начало строки похоже на метку поля — остаток считаем значением."""
+    text = ln.text.strip()
+    words = text.split()
+    best = None
+    for spec in cfg.text_fields:
+        n_words = len(spec.label.split())
+        for extra in (0, 1):
+            k = n_words + extra
+            if k > len(words) - 1:
+                continue
+            candidate = " ".join(words[:k])
+            s = _label_score(candidate, spec)
+            if s >= threshold and (best is None or s > best[0]):
+                best = (s, k)
+    if best is None:
+        return None
+    k = best[1]
+    label = " ".join(words[:k])
+    value = " ".join(words[k:])
+    # bbox значения: доля ширины строки по символам
+    x1, y1, x2, y2 = ln.bbox
+    frac = (len(label) + 1) / max(1, len(text))
+    xs = x1 + int((x2 - x1) * min(0.95, frac))
+    return label, value, (x1, y1, xs, y2), (xs, y1, x2, y2)
+
+
 def extract_text_fields(cfg: DocTypeConfig, lines: list[TextLine]) -> dict[str, FieldValue]:
     settings = get_settings().get("extract", {})
     threshold = settings.get("label_match_threshold", 82)
@@ -46,6 +73,9 @@ def extract_text_fields(cfg: DocTypeConfig, lines: list[TextLine]) -> dict[str, 
     parsed = []
     for ln in lines:
         label, value, lb, vb = split_label_value(ln)
+        if not value:
+            # двоеточие потеряно OCR («Надание вуза Учебный университет …»): ищем метку как префикс строки
+            label, value, lb, vb = _split_by_label_prefix(ln, cfg, threshold) or (label, value, lb, vb)
         parsed.append((ln, label, value, lb, vb))
 
     # матрица оценок поле x строка, жадное назначение (лучшие совпадения первыми)

@@ -84,6 +84,16 @@ def build_result(ctx: ProcessingContext, doc_type: Optional[str], meta: dict) ->
     timings["extract"] = round(time.perf_counter() - t2, 3)
 
     warnings = list(meta.get("warnings", []))
+    # читаемость снимка: средняя уверенность OCR, доля найденных меток, высота текста
+    confs = [l.conf for ln in ctx.lines for l in ln.parts]
+    mean_conf = float(np.mean(confs)) if confs else 0.0
+    labels_found = sum(1 for f in cfg.text_fields if fields[f.key].label_bbox is not None)
+    label_ratio = labels_found / max(1, len(cfg.text_fields))
+    low_quality = mean_conf < 0.75 or label_ratio < 0.6
+    readability = {"mean_ocr_conf": round(mean_conf, 3), "labels_found_ratio": round(label_ratio, 2), "low_quality": low_quality}
+    if low_quality:
+        warnings.append("Снимок низкого качества: текст мелкий или нечёткий, распознавание ненадёжно. "
+                        "Сфотографируйте документ ближе, ровно и при хорошем освещении (или пришлите скан/PDF).")
     if auto and conf < 0.5:
         warnings.append("Тип документа определён с низкой уверенностью — проверьте выбор типа.")
     type_mismatch = None
@@ -101,7 +111,8 @@ def build_result(ctx: ProcessingContext, doc_type: Optional[str], meta: dict) ->
         doc_type=cfg.key, doc_type_title=cfg.title, type_confidence=conf, type_auto=auto,
         fields=fields, validation=validation, ocr_text=full_text(ctx.lines),
         ocr_lines=[l for ln in ctx.lines for l in ln.parts],
-        image_size=(w, h), quality=dict(meta.get("quality", {}), steps=meta.get("steps", []), ocr=meta.get("ocr", {})),
+        image_size=(w, h), quality=dict(meta.get("quality", {}), steps=meta.get("steps", []), ocr=meta.get("ocr", {}),
+                                        readability=readability),
         timings=timings, warnings=warnings, type_candidates=candidates, type_mismatch=type_mismatch,
     )
 

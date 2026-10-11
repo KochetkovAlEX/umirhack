@@ -28,7 +28,12 @@ export default function FieldsTable({ fields, highlight, onSelect }: Props) {
                   f.found ? <span className="chip border-blue-300 bg-blue-50 text-blue-800"><Check size={12} /> есть</span>
                     : <span className="chip border-red-300 bg-red-50 text-red-800"><X size={12} /> отсутствует</span>
                 ) : f.found ? (
-                  <span>{String(f.value)}</span>
+                  <span>
+                    {String(f.value)}
+                    {f.confidence > 0 && f.confidence < 0.75 && (
+                      <span className="chip ml-1 border-amber-300 bg-amber-50 text-amber-800" title="Низкая уверенность OCR — проверьте значение">? низкая уверенность</span>
+                    )}
+                  </span>
                 ) : (
                   <span className="chip border-ink-300 bg-ink-100 text-ink-600">не найдено</span>
                 )}

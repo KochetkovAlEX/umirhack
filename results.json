@@ -1135,7 +1135,7 @@
       "document_id": "open-020",
       "document_type": "academic_leave_application",
       "fields": {
-        "student_name": "Захаров Виктор Михайлович",
+        "student_name": "Захаров Виктор Михаилович",
         "group": "не найдено",
         "course": "2",
         "leave_reason": "по семейным обстоятельствам",
@@ -1256,7 +1256,7 @@
       "document_id": "open-022",
       "document_type": "internship_certificate",
       "fields": {
-        "student_name": "Мельников Фёдор Михайлович",
+        "student_name": "Мельников Фёдор Михаилович",
         "organization": "Учебная организация «Спектр»",
         "internship_start": "2026-06-01",
         "internship_end": "2026-07-15",

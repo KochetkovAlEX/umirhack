@@ -146,6 +146,16 @@ export default function DocumentPage() {
               {retype.isPending && <Loader2 className="animate-spin" size={16} />}
             </div>
           </div>
+          {result.quality?.readability?.low_quality && (
+            <div className="mt-3 rounded-xl border border-red-300 bg-red-50 p-3 text-sm">
+              <div className="font-semibold text-red-800">Снимок низкого качества — результат ненадёжен</div>
+              <div className="text-red-800/90 mt-0.5">
+                Текст мелкий или нечёткий (уверенность OCR {Math.round((result.quality.readability.mean_ocr_conf ?? 0) * 100)}%,
+                найдено меток {Math.round((result.quality.readability.labels_found_ratio ?? 0) * 100)}%). Сфотографируйте документ ближе,
+                ровно и при хорошем освещении или загрузите скан/PDF. Поля с низкой уверенностью помечены знаком «?».
+              </div>
+            </div>
+          )}
           {result.type_mismatch && (
             <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm">
               <div className="font-semibold text-amber-800">Похоже, выбран неправильный тип документа</div>
@@ -157,7 +167,7 @@ export default function DocumentPage() {
               </button>
             </div>
           )}
-          {result.warnings?.filter((w) => !w.startsWith('Похоже, выбран')).map((w) => (
+          {result.warnings?.filter((w) => !w.startsWith('Похоже, выбран') && !w.startsWith('Снимок низкого')).map((w) => (
             <div key={w} className="mt-2 rounded-lg bg-amber-50 text-amber-800 text-xs p-2">{w}</div>
           ))}
         </div>
