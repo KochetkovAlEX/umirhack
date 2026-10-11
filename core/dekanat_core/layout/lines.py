@@ -98,5 +98,43 @@ def split_label_value(line: TextLine) -> tuple[str, str, BBox | None, BBox | Non
     return label, value, label_bbox or line.bbox, value_bbox
 
 
-def full_text(lines: list[TextLine]) -> str:
-    return "\n".join(l.text for l in lines)
+_OK_CHARS = set(" .,:;-–—«»()/№\"'!?%+")
+
+
+def is_junk_line(text: str, conf: float = 1.0) -> bool:
+    """Строка — мусор OCR (фон фотографии, клавиатура, тени), а не текст документа.
+
+    Признаки: низкая уверенность, мало кириллицы среди букв при отсутствии чисел,
+    много посторонних символов, слишком короткий «шум».
+    """
+    t = text.strip()
+    if not t:
+        return True
+    letters = [c for c in t if c.isalpha()]
+    digits = sum(c.isdigit() for c in t)
+    cyr = sum(("а" <= c.lower() <= "я") or c.lower() == "ё" for c in letters)
+    if not letters and digits < 2:
+        return True
+    if conf < 0.45:
+        return True
+    weird = sum(1 for c in t if not (c.isalnum() or c in _OK_CHARS))
+    if weird / max(1, len(t)) > 0.2:
+        return True
+    if letters and cyr / len(letters) < 0.5 and digits < 4:
+        return True
+    if len(t) <= 2 and digits == 0:
+        return True
+    # пословно: нормальное слово — только кириллица/цифры (после снятия пунктуации); латиница и обрывки — нет
+    tokens = [tok.strip("«»\"'.,:;()№-–—/!?") for tok in t.split()]
+    tokens = [tok for tok in tokens if tok]
+    if len(tokens) >= 4:
+        good = sum(1 for tok in tokens if all(c.isdigit() or ("а" <= c.lower() <= "я") or c.lower() == "ё" or c == "." for c in tok))
+        if good / len(tokens) < 0.5:
+            return True
+    return False
+
+
+def full_text(lines: list[TextLine], *, drop_junk: bool = True) -> str:
+    """Распознанный текст для показа пользователю; мусорные строки с фона фото отбрасываются."""
+    kept = [l.text for l in lines if not (drop_junk and is_junk_line(l.text, l.conf))]
+    return "\n".join(kept)
