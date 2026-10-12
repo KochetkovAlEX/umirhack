@@ -5,7 +5,7 @@ interface Props {
   src: string
   size: [number, number]
   fields: FieldValue[]
-  transform: number[][] | null // матрица исходные->нормализованные; для исходного снимка bbox проецируются обратно
+  transform: number[][] | null // матрица исходный -> нормализованный, по ней bbox переводим обратно на исходник
   highlight: string | null
   onSelect: (key: string | null) => void
   isPdfOriginal?: boolean

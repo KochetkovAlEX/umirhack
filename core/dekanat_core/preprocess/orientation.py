@@ -1,6 +1,4 @@
-"""Ориентация страницы (0/90/180/270°): классификатор PaddleX PP-LCNet_x1_0_doc_ori,
-резерв — Tesseract OSD. Возвращает выправленное изображение и матрицу преобразования.
-"""
+"""Определение ориентации страницы (0/90/180/270). Сначала PaddleX, если не вышло, то Tesseract OSD."""
 from __future__ import annotations
 
 import logging
@@ -70,7 +68,7 @@ def _detect_tesseract(rgb: np.ndarray) -> tuple[int, float] | None:
 
 
 def detect_rotation(rgb: np.ndarray) -> tuple[int, float, str]:
-    """(угол поворота страницы по часовой стрелке 0/90/180/270, уверенность, источник)."""
+    """Возвращает (угол по часовой, уверенность, источник)."""
     r = _detect_paddle(rgb)
     if r is not None:
         return r[0], r[1], "paddle"
@@ -81,7 +79,7 @@ def detect_rotation(rgb: np.ndarray) -> tuple[int, float, str]:
 
 
 def rot90_matrix(k: int, w: int, h: int) -> np.ndarray:
-    """Матрица преобразования координат для np.rot90(img, k) (поворот против часовой на k*90°)."""
+    """Матрица координат для np.rot90(img, k)."""
     k %= 4
     if k == 0:
         return np.eye(3)
@@ -93,11 +91,11 @@ def rot90_matrix(k: int, w: int, h: int) -> np.ndarray:
 
 
 def fix_orientation(rgb: np.ndarray, min_conf: float = 0.6) -> tuple[np.ndarray, np.ndarray, int, str]:
-    """Повернуть страницу «текстом вверх». Возвращает (изображение, матрица, угол, источник)."""
+    """Поворачивает страницу текстом вверх."""
     angle, conf, src = detect_rotation(rgb)
     if angle == 0 or conf < min_conf:
         return rgb, np.eye(3), 0, src
-    k = (angle // 90) % 4   # метка «270» = страница повёрнута на 270° по часовой -> крутим на 270° против
+    k = (angle // 90) % 4   # метка 270 = повёрнута на 270 по часовой, крутим обратно
     h, w = rgb.shape[:2]
     out = np.ascontiguousarray(np.rot90(rgb, k))
     return out, rot90_matrix(k, w, h), angle, src

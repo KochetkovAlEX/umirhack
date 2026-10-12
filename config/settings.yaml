@@ -8,17 +8,17 @@ ocr:
   tesseract_cmd: null      # путь к tesseract.exe, если его нет в PATH
   tessdata_dir: models/tessdata  # каталог с rus.traineddata (если не в стандартном tessdata)
   cpu_threads: 8
-  min_mean_conf: 0.75      # ниже — подключаем fallback
-  min_label_hits: 0.6      # доля найденных меток полей, ниже — подключаем fallback
+  min_mean_conf: 0.75      # если ниже, запускаем fallback
+  min_label_hits: 0.6      # доля найденных меток полей, если меньше - fallback
   use_gpu: false
 
 preprocess:
   max_side: 2400           # ограничение размера для скорости
-  min_text_height_px: 12   # медианная высота компонент текста ниже — апскейл x2
+  min_text_height_px: 12   # если текст мельче, увеличиваем в 2 раза
   deskew_max_angle: 30
   enable_denoise: true       # сглаживание муара/зерна (bilateral) при шумном фоне
   denoise_noise_threshold: 0.05
-  enable_orientation: true   # поворот страницы на 90/180/270° (PP-LCNet doc_ori, резерв Tesseract OSD)
+  enable_orientation: true   # поворот на 90/180/270 градусов (PP-LCNet doc_ori, запасной вариант Tesseract OSD)
   orientation_min_conf: 0.6
   enable_perspective: true
   enable_shadow_removal: true
@@ -26,7 +26,7 @@ preprocess:
 
 marks:
   signature:
-    min_ink_ratio: 0.012   # доля «чернильных» пикселей в ROI
+    min_ink_ratio: 0.012   # доля тёмных пикселей в ROI
     min_height_ratio: 0.12 # вертикальный разброс чернил относительно высоты ROI (минимум 10 px)
   seal:
     min_blue_ratio: 0.008

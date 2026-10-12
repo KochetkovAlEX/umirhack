@@ -1,4 +1,4 @@
-"""Предварительная проверка комплектности по конфигу типа и Положению (п. 2.6, 6.1, 6.2)."""
+"""Проверка комплектности документа (п. 2.6, 6.1, 6.2)."""
 from __future__ import annotations
 
 from ..config.schema import DocTypeConfig
@@ -10,7 +10,7 @@ def _sort_rules(rules: set[str]) -> list[str]:
 
 
 def human_label(label: str) -> str:
-    """«Дата выдачи» -> «дата выдачи» для перечисления в тексте."""
+    """Метка с маленькой буквы для текста ответа."""
     return label[:1].lower() + label[1:] if not label.isupper() and not label.startswith("ФИО") else label
 
 

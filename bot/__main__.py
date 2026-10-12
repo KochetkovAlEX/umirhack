@@ -1,6 +1,5 @@
-"""Telegram-бот «Онлайн-деканат» (aiogram 3, long polling).
+"""Telegram-бот Онлайн-деканат (aiogram 3).
 
-Бот — только транспорт: файлы отправляются в Django API, OCR и ответы формирует бэкенд.
 Запуск: BOT_TOKEN=... API_BASE_URL=http://localhost:8000 python -m bot
 """
 from __future__ import annotations
@@ -33,10 +32,9 @@ log = logging.getLogger("bot")
 router = Router()
 
 MAX_TG_FILE = 20 * 1024 * 1024
-# Публичный HTTPS-адрес веб-интерфейса для Telegram Mini App. Бесплатные туннели меняют адрес при
-# переподключении, поэтому адрес читается при каждом обращении: сначала из файла, который обновляет
-# scripts/tunnel_keeper.py, затем из переменной окружения WEBAPP_URL.
-_URL_FILE = Path(os.environ.get("WEBAPP_URL_FILE", Path(__file__).resolve().parents[1] / "scripts" / "dev" / "webapp_url.txt"))
+# адрес Mini App меняется при переподключении туннеля, поэтому читаем его каждый раз:
+# сначала из файла от tunnel_keeper.py, потом из WEBAPP_URL
+_URL_FILE = Path(os.environ.get("WEBAPP_URL_FILE", Path(__file__).resolve().parents[1] / "runtime" / "webapp_url.txt"))
 
 
 def webapp_url() -> str:
@@ -50,7 +48,7 @@ def webapp_url() -> str:
     return os.environ.get("WEBAPP_URL", "").rstrip("/")
 
 
-WEBAPP_URL = webapp_url()  # для стартового лога
+WEBAPP_URL = webapp_url()  # для лога при старте
 
 
 def webapp_button(text: str = "🌐 Открыть приложение", path: str = "/") -> InlineKeyboardButton | None:
@@ -111,10 +109,10 @@ async def quick_kb(doc_id: str | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-# ---------------- ошибки ----------------
+# ошибки
 @router.errors()
 async def on_error(event, *args, **kwargs):
-    """Любая ошибка обработчика -> понятное сообщение пользователю, а не молчание."""
+    """При любой ошибке пишем пользователю, чтобы бот не молчал."""
     exc = event.exception
     log.exception("Ошибка обработчика: %s", exc)
     msg = None
@@ -138,7 +136,7 @@ async def on_error(event, *args, **kwargs):
     return True
 
 
-# ---------------- команды ----------------
+# команды
 @router.message(CommandStart())
 async def cmd_start(m: Message, state: FSMContext):
     await state.clear()
@@ -248,7 +246,7 @@ async def cmd_type(m: Message, state: FSMContext):
     await m.answer("Выберите тип документа:", reply_markup=await types_kb("retype"))
 
 
-# ---------------- загрузка файла ----------------
+# загрузка файла
 @router.message(F.photo | F.document)
 async def on_file(m: Message, state: FSMContext, bot: Bot):
     if m.document:
@@ -295,7 +293,7 @@ async def on_type_chosen(cq: CallbackQuery, state: FSMContext, bot: Bot):
     await bot.send_chat_action(cq.message.chat.id, ChatAction.TYPING)
     question = data.get("pending_question", "")
     try:
-        # асинхронно: API отвечает сразу, дальше опрашиваем статус (туннели обрывают долгие запросы)
+        # грузим с async и опрашиваем статус, туннель рвет долгие запросы
         doc = await api.upload(data["pending_file"], data["pending_name"], doc_type, question,
                                user_id=str(cq.from_user.id), wait=False)
         for i in range(90):
@@ -333,7 +331,7 @@ async def on_type_chosen(cq: CallbackQuery, state: FSMContext, bot: Bot):
 
 
 async def _warn_type_mismatch(m: Message, doc: dict):
-    """Выбран не тот тип (например, справка об обучении загружена как заявление): предлагаем сменить."""
+    """Если тип выбран не тот, предлагаем его сменить."""
     mm = (doc.get("result") or {}).get("type_mismatch")
     if not mm:
         return
@@ -403,7 +401,7 @@ async def on_crop(cq: CallbackQuery, state: FSMContext):
         await cq.message.answer("Для этого поля нет координат на снимке.")
 
 
-# ---------------- свободный вопрос ----------------
+# вопрос текстом
 @router.message(F.text)
 async def on_question(m: Message, state: FSMContext, bot: Bot):
     data = await state.get_data()
@@ -429,7 +427,7 @@ async def main():
     dp.include_router(router)
     url = webapp_url()
     if url:
-        # кнопка меню рядом с полем ввода открывает Mini App (при смене адреса её обновляет tunnel_keeper)
+        # кнопка меню для Mini App, tunnel_keeper обновляет её при смене адреса
         await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Приложение", web_app=WebAppInfo(url=f"{url}/")))
         log.info("Mini App: %s", url)
     else:

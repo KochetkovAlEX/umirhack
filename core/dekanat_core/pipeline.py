@@ -1,4 +1,4 @@
-"""Главный конвейер: файл -> OCR -> поля -> отметки -> проверка; вопрос -> ответ."""
+"""Основной пайплайн: файл -> OCR -> поля -> проверка, вопрос -> ответ."""
 from __future__ import annotations
 
 import logging
@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 class ProcessingContext:
-    """Промежуточные данные (изображения, матрица), нужные для подсветки и смены типа."""
+    """Промежуточные данные для подсветки и смены типа."""
 
     def __init__(self):
         self.original_rgb: Optional[np.ndarray] = None
@@ -34,12 +34,12 @@ class ProcessingContext:
 
 
 def _all_labels() -> list[list[str]]:
-    """Метки текстовых полей по типам документов (для оценки качества OCR)."""
+    """Метки текстовых полей по типам (для оценки качества OCR)."""
     return [[f.label for f in cfg.text_fields] for cfg in load_doc_types().values()]
 
 
 def analyze_image(rgb: np.ndarray, *, preprocess: bool = True) -> tuple[ProcessingContext, dict]:
-    """OCR и разметка строк (не зависит от типа документа)."""
+    """OCR и разбивка на строки."""
     t0 = time.perf_counter()
     ctx = ProcessingContext()
     ctx.original_rgb = rgb
@@ -63,7 +63,7 @@ def analyze_image(rgb: np.ndarray, *, preprocess: bool = True) -> tuple[Processi
 
 
 def build_result(ctx: ProcessingContext, doc_type: Optional[str], meta: dict) -> DocumentResult:
-    """Извлечение полей и проверка для заданного (или автоопределённого) типа."""
+    """Извлечение полей и проверка для выбранного типа."""
     t2 = time.perf_counter()
     auto = doc_type in (None, "", "auto")
     candidates: list[dict] = []
@@ -77,14 +77,13 @@ def build_result(ctx: ProcessingContext, doc_type: Optional[str], meta: dict) ->
     fields: dict[str, FieldValue] = {}
     fields.update(extract_text_fields(cfg, ctx.lines))
     fields.update(detect_marks(ctx.normalized_rgb, ctx.lines, cfg.mark_fields))
-    # порядок как в конфиге
     fields = {spec.key: fields[spec.key] for spec in cfg.fields}
     validation = validate(cfg, fields)
     timings = dict(meta.get("timings", {}))
     timings["extract"] = round(time.perf_counter() - t2, 3)
 
     warnings = list(meta.get("warnings", []))
-    # читаемость снимка: средняя уверенность OCR, доля найденных меток, высота текста
+    # читаемость: уверенность OCR, доля найденных меток, высота текста
     confs = [l.conf for ln in ctx.lines for l in ln.parts]
     mean_conf = float(np.mean(confs)) if confs else 0.0
     labels_found = sum(1 for f in cfg.text_fields if fields[f.key].label_bbox is not None)
@@ -98,8 +97,7 @@ def build_result(ctx: ProcessingContext, doc_type: Optional[str], meta: dict) ->
         warnings.append("Тип документа определён с низкой уверенностью — проверьте выбор типа.")
     type_mismatch = None
     if not auto and candidates:
-        # тип выбран вручную, но документ явно похож на другой тип (например, справка об обучении
-        # загружена как заявление на отпуск): сообщаем, не меняя выбор пользователя
+        # тип выбран вручную, но документ похож на другой, просто предупреждаем
         best = candidates[0]
         chosen = next((c for c in candidates if c["key"] == cfg.key), None)
         if best["key"] != cfg.key and best["score"] >= 0.5 and (chosen is None or best["score"] >= 2 * max(0.05, chosen["score"])):

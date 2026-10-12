@@ -1,8 +1,4 @@
-"""Формирование ответа: value/sources для автопроверки и текст для пользователя.
-
-Инварианты: sources пусты <=> answerable == False; answer непустой; value и
-answer формируются одной функцией, поэтому не противоречат друг другу.
-"""
+"""Сборка ответа: value, sources и текст для пользователя."""
 from __future__ import annotations
 
 from ..config.schema import DocTypeConfig
@@ -90,5 +86,5 @@ def build_answer(result: DocumentResult, cfg: DocTypeConfig, question: str, inte
 
 
 def check_document(result: DocumentResult, cfg: DocTypeConfig) -> Answer:
-    """Самостоятельная проверка без вопроса (п. 6.5)."""
+    """Проверка без вопроса (п. 6.5)."""
     return answer_question(result, cfg, COMPLETENESS_QUESTION)

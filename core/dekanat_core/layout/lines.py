@@ -1,4 +1,4 @@
-"""Сборка OCR-боксов в визуальные строки и разбор «Метка: значение»."""
+"""Сборка OCR-боксов в строки и разбор "Метка: значение"."""
 from __future__ import annotations
 
 import re
@@ -28,7 +28,7 @@ def _union(a: BBox, b: BBox) -> BBox:
 
 
 def group_lines(ocr: list[OcrLine]) -> list[TextLine]:
-    """Боксы с пересечением по вертикали > 50% высоты объединяются в строку."""
+    """Склеивает боксы в строки, если они пересекаются по вертикали больше чем на 50%."""
     items = sorted(ocr, key=lambda l: ((l.bbox[1] + l.bbox[3]) / 2, l.bbox[0]))
     rows: list[list[OcrLine]] = []
     for it in items:
@@ -63,11 +63,7 @@ _SEP_RE = re.compile(r"\s*[:：]\s*")
 
 
 def split_label_value(line: TextLine) -> tuple[str, str, BBox | None, BBox | None]:
-    """Вернуть (метка, значение, bbox метки, bbox значения).
-
-    bbox значения оценивается по частям OCR, лежащим правее двоеточия; если
-    двоеточие внутри одного бокса — доля ширины по символам.
-    """
+    """Возвращает (метка, значение, bbox метки, bbox значения)."""
     text = line.text
     m = _SEP_RE.search(text)
     if not m:
@@ -75,7 +71,7 @@ def split_label_value(line: TextLine) -> tuple[str, str, BBox | None, BBox | Non
     label = text[: m.start()].strip()
     value = text[m.end():].strip()
 
-    # bbox: ищем часть, содержащую двоеточие
+    # ищем часть с двоеточием
     label_bbox: BBox | None = None
     value_bbox: BBox | None = None
     acc = 0
@@ -84,7 +80,6 @@ def split_label_value(line: TextLine) -> tuple[str, str, BBox | None, BBox | Non
         start, end = acc, acc + len(ptext)
         acc = end + 1
         if start <= m.start() < end + 1:
-            # разделитель внутри этой части
             frac = (m.end() - start) / max(1, len(ptext))
             x1, y1, x2, y2 = part.bbox
             xs = x1 + int((x2 - x1) * min(1.0, frac))
@@ -102,11 +97,7 @@ _OK_CHARS = set(" .,:;-–—«»()/№\"'!?%+")
 
 
 def is_junk_line(text: str, conf: float = 1.0) -> bool:
-    """Строка — мусор OCR (фон фотографии, клавиатура, тени), а не текст документа.
-
-    Признаки: низкая уверенность, мало кириллицы среди букв при отсутствии чисел,
-    много посторонних символов, слишком короткий «шум».
-    """
+    """Проверяет, что строка это мусор с фона фото, а не текст документа."""
     t = text.strip()
     if not t:
         return True
@@ -124,7 +115,7 @@ def is_junk_line(text: str, conf: float = 1.0) -> bool:
         return True
     if len(t) <= 2 and digits == 0:
         return True
-    # пословно: нормальное слово — только кириллица/цифры (после снятия пунктуации); латиница и обрывки — нет
+    # нормальное слово: только кириллица и цифры (без пунктуации)
     tokens = [tok.strip("«»\"'.,:;()№-–—/!?") for tok in t.split()]
     tokens = [tok for tok in tokens if tok]
     if len(tokens) >= 4:
@@ -135,6 +126,6 @@ def is_junk_line(text: str, conf: float = 1.0) -> bool:
 
 
 def full_text(lines: list[TextLine], *, drop_junk: bool = True) -> str:
-    """Распознанный текст для показа пользователю; мусорные строки с фона фото отбрасываются."""
+    """Текст для показа пользователю, без мусорных строк."""
     kept = [l.text for l in lines if not (drop_junk and is_junk_line(l.text, l.conf))]
     return "\n".join(kept)

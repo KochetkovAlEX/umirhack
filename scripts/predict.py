@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Пакетная обработка манифеста документов + вопросов -> results.json.
+"""Прогон документов и вопросов из манифеста, результат в results.json.
 
 Пример:
   python scripts/predict.py --manifest data/documents.json --questions data/questions.json \
@@ -71,7 +71,7 @@ def run(args) -> dict:
             debug.append({"document_id": doc_id, "type_auto": result.doc_type, "type_conf": result.type_confidence,
                           "timings": result.timings, "ocr": result.quality.get("ocr"),
                           "marks": {k: v.confidence for k, v in result.fields.items() if v.kind == "mark"}})
-        except Exception as exc:  # документ не должен валить весь прогон
+        except Exception as exc:  # один плохой документ не должен ронять весь прогон
             logging.error("%s: %s\n%s", doc_id, exc, traceback.format_exc())
             doc = empty_document(doc_id, doc_type or "study_certificate", qs)
             debug.append({"document_id": doc_id, "error": str(exc)})
@@ -85,8 +85,7 @@ def run(args) -> dict:
     if args.debug:
         Path(args.debug).write_text(json.dumps(debug, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # проверка схемы организаторов: она описывает только официальные типы; документы пользовательских
-    # типов (добавленных через config/doc_types) при проверке схемы пропускаются
+    # проверяем по схеме организаторов, в ней только официальные типы, свои типы пропускаем
     try:
         import jsonschema
 

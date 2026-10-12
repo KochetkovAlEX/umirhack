@@ -1,5 +1,5 @@
-// Интеграция с Telegram Mini App (telegram-web-app.js подключён в index.html).
-// Вне Telegram все функции — no-op.
+// Telegram Mini App (telegram-web-app.js подключён в index.html)
+// вне телеграма функции ничего не делают
 import type { Theme } from './theme'
 
 interface TgWebApp {
@@ -19,7 +19,7 @@ interface TgWebApp {
   isVersionAtLeast?: (v: string) => boolean
 }
 
-/** Скачать файл: в Telegram <a download> не работает — используем WebApp.downloadFile (Bot API 8.0+) или openLink. */
+// в Telegram <a download> не работает, поэтому downloadFile (Bot API 8.0+) или openLink
 export function downloadFile(url: string, fileName: string): boolean {
   const w = tg()
   if (!w) return false
@@ -44,7 +44,7 @@ declare global {
 
 export function tg(): TgWebApp | null {
   const w = window.Telegram?.WebApp
-  // скрипт создаёт объект даже вне Telegram; признак реального клиента — непустой initData/платформа
+  // объект есть и вне Telegram, поэтому смотрим на initData и платформу
   return w && (w.initDataUnsafe?.user || Object.keys(w.themeParams || {}).length > 0) ? w : null
 }
 

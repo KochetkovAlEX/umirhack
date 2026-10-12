@@ -10,7 +10,7 @@ interface Props {
   onSelect: (key: string) => void
 }
 
-/** Чип источника: `field:key` подсвечивает поле на снимке, `rule:X.Y` показывает текст пункта. */
+// field:key подсвечивает поле на снимке, rule:X.Y показывает текст пункта
 export default function SourceChip({ source, fields, onSelect }: Props) {
   const [open, setOpen] = useState(false)
   const rules = useQuery({ queryKey: ['rules'], queryFn: api.rules, staleTime: Infinity })

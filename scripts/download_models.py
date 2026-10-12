@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-"""Предзагрузка весов OCR для офлайн-работы.
+"""Скачивает веса OCR (PaddleOCR и tessdata rus/eng), чтобы работать без интернета.
 
-- PaddleOCR: PP-OCRv5_mobile_det + eslav_PP-OCRv5_mobile_rec -> ~/.paddlex/official_models
-- Tesseract: rus/eng traineddata -> models/tessdata (если нет в системном tessdata)
+  python scripts/download_models.py
 """
 from __future__ import annotations
 

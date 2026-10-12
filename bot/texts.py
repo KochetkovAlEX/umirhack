@@ -1,4 +1,4 @@
-"""Тексты и форматирование сообщений бота (HTML-разметка Telegram)."""
+"""Тексты сообщений бота и их форматирование (HTML)."""
 from __future__ import annotations
 
 from html import escape

@@ -1,8 +1,4 @@
-"""Детекция графических отметок: подпись (росчерк) и печать (круглый штамп).
-
-Надписи «Подпись:» и «М.П.» сами по себе отметкой не являются (п. 2.3 Положения):
-проверяется наличие графического элемента рядом с якорем.
-"""
+"""Поиск подписи и печати рядом с надписями "Подпись" и "М.П." (сама надпись не считается, п. 2.3)."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -26,7 +22,7 @@ class MarkDetection:
 
 
 def _ink_mask(rgb: np.ndarray) -> np.ndarray:
-    """Маска «чернил»: насыщенные (синие/цветные) или достаточно тёмные пиксели."""
+    """Маска чернил: цветные или тёмные пиксели."""
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     colored = (hsv[:, :, 1] > 60) & (hsv[:, :, 2] > 40)
@@ -36,13 +32,13 @@ def _ink_mask(rgb: np.ndarray) -> np.ndarray:
 
 def _blue_mask(rgb: np.ndarray) -> np.ndarray:
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
-    # hue OpenCV 0..180: синий ~ 100..135; допускаем фиолетовый/голубой
+    # hue в OpenCV 0..180, синий примерно 100..135
     h, s, v = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
     return (((h >= 90) & (h <= 140) & (s > 50) & (v > 40))).astype(np.uint8) * 255
 
 
 def _remove_lines(mask: np.ndarray) -> np.ndarray:
-    """Убираем горизонтальные линии (линия для подписи) и подчёркивания."""
+    """Убирает горизонтальные линии."""
     w = mask.shape[1]
     k = cv2.getStructuringElement(cv2.MORPH_RECT, (max(15, w // 8), 1))
     horiz = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k)
@@ -62,7 +58,7 @@ def detect_signature(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) ->
     if anchor is not None:
         x1, y1, x2, y2 = anchor_bbox(anchor, spec.anchor or "подпись")
         lh = max(10, y2 - y1)
-        # зона справа от метки: до ~55% ширины страницы (печать правее), по высоте 1.5 строки вверх и 0.6 вниз
+        # зона справа от метки, правее обычно печать
         roi = _clip((x2 + 5, y1 - int(1.5 * lh), min(W, x1 + int(0.55 * W)), y2 + int(0.6 * lh)), W, H)
     else:
         roi = _clip((0, int(H * 0.62), int(W * 0.65), int(H * 0.9)), W, H)
@@ -75,7 +71,7 @@ def detect_signature(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) ->
     n, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
     if n <= 1:
         return MarkDetection(False, None, 0.0, {"reason": "no ink", "roi": roi})
-    # крупнейшая группа компонентов: объединяем компоненты, близкие друг к другу
+    # склеиваем близкие компоненты к самой большой
     comps = [stats[i] for i in range(1, n) if stats[i][cv2.CC_STAT_AREA] >= 15]
     if not comps:
         return MarkDetection(False, None, 0.0, {"reason": "only noise", "roi": roi})
@@ -94,7 +90,7 @@ def detect_signature(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) ->
     bw, bh = bx2 - bx1, by2 - by1
     roi_h = ry2 - ry1
     ink_ratio = area / max(1, bw * bh)
-    # признаки подписи: заметная ширина, высота больше толщины линии, «рыхлость» (не сплошной блок)
+    # подпись: достаточно широкая и высокая, но не сплошной блок
     min_h = max(10, cfg.get("min_height_ratio", 0.12) * roi_h)
     ok = bw > 0.04 * W and bh >= min_h and 0.02 < ink_ratio < 0.7 and area > cfg.get(
         "min_ink_ratio", 0.012) * (rx2 - rx1) * roi_h * 0.3
@@ -105,9 +101,8 @@ def detect_signature(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) ->
 
 
 def _ink_any_color(crop: np.ndarray) -> np.ndarray:
-    """Чернила любого цвета: синие (цветная печать) ИЛИ тёмные относительно локального фона
-    (чёрно-белая печать, фото с тенями)."""
-    smooth = cv2.medianBlur(cv2.bilateralFilter(crop, 7, 60, 60), 3)  # подавляем муар/зерно, сохраняя линии
+    """Синие или тёмные пиксели (для цветной и ч/б печати)."""
+    smooth = cv2.medianBlur(cv2.bilateralFilter(crop, 7, 60, 60), 3)  # убираем муар
     gray = cv2.cvtColor(smooth, cv2.COLOR_RGB2GRAY)
     dark = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 41, 14)
     return cv2.bitwise_or(_blue_mask(crop), dark)
@@ -135,7 +130,7 @@ def detect_seal(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) -> Mark
     if crop.size == 0:
         return MarkDetection(False, None, 0.0, {"reason": "empty roi"})
     ink = _ink_any_color(crop)
-    # текст (в т.ч. «М.П.» и надписи внутри печати) убираем по OCR-боксам — остаётся кольцо
+    # стираем текст по боксам OCR, чтобы осталось кольцо
     for ln in lines:
         lx1, ly1, lx2, ly2 = ln.bbox
         ix1, iy1 = max(lx1, rx1) - rx1, max(ly1, ry1) - ry1
@@ -147,7 +142,7 @@ def detect_seal(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) -> Mark
     min_r = max(8, int(cfg.get("min_radius_ratio", 0.03) * W))
     max_r = max(10, int(cfg.get("max_radius_ratio", 0.12) * W))
 
-    # 1) окружности Хафа на маске чернил
+    # 1) ищем окружности Хафа
     blur = cv2.GaussianBlur(ink, (9, 9), 2)
     circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, dp=1.2, minDist=min_r, param1=100, param2=22,
                                minRadius=min_r, maxRadius=max_r)
@@ -158,7 +153,7 @@ def detect_seal(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) -> Mark
             if best is None or ratio > best[3]:
                 best = (int(cx), int(cy), int(r), ratio)
 
-    # 2) запасной признак: крупная компактная кольцевая компонента (округлая выпуклая оболочка, не сплошная)
+    # 2) если Хаф не нашёл, ищем круглый контур
     blob = None
     closed = cv2.morphologyEx(ink, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
     contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -177,8 +172,7 @@ def detect_seal(rgb: np.ndarray, lines: list[TextLine], spec: FieldSpec) -> Mark
                 blob = (x, y, w, h, area, circularity)
 
     ok, bbox, score = False, None, 0.0
-    # порог покрытия кольца растёт вместе с плотностью «чернил» в зоне: в шуме (муар) кольцо должно быть
-    # заметно плотнее фона, иначе случайные окружности Хафа дают ложную печать
+    # в шуме порог выше, иначе Хаф находит ложные круги
     min_cov = max(float(cfg.get("min_ring_coverage", 0.2)), 5.0 * ink_ratio)
     if best is not None and best[3] >= min_cov:
         cx, cy, r, ratio = best

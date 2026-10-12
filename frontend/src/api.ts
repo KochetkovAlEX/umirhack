@@ -105,8 +105,8 @@ export const api = {
   health: () => fetch(`${BASE}/health`).then((r) => handle<{ status: string; engines: Record<string, string> }>(r)),
   docTypes: () => fetch(`${BASE}/doc-types`).then((r) => handle<DocType[]>(r)),
   rules: () => fetch(`${BASE}/rules`).then((r) => handle<Rules>(r)),
-  // async=1: сервер отвечает сразу (202, status=processing) — важно для медленных каналов и туннелей,
-  // которые обрывают запросы дольше нескольких секунд; дальше страница документа опрашивает статус.
+  // async=1: сервер сразу отвечает 202, а статус потом опрашивает страница документа
+  // (туннели рвут запросы дольше нескольких секунд)
   upload: (file: File, docType: string, question: string, check: boolean) => {
     const fd = new FormData()
     fd.append('file', file)

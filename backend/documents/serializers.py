@@ -41,7 +41,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         if obj.status != UploadedDocument.Status.DONE or not hasattr(obj, "result"):
             return None
         r = dict(obj.result.result)
-        r.pop("ocr_lines", None)  # объёмно; отдаётся отдельным эндпоинтом при необходимости
+        r.pop("ocr_lines", None)  # много данных, есть отдельный эндпоинт /ocr
         r["transform"] = obj.result.transform
         r["original_size"] = obj.result.original_size
         return r

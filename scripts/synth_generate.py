@@ -1,9 +1,5 @@
 #!/usr/bin/env python
-"""Генератор синтетических документов с НОВЫМИ значениями (проверка обобщения, антипереобучение).
-
-Повторяет макет учебных документов: шапка, заголовок, строки «Метка: значение»,
-подпись (росчерк) и печать (круг) как графические элементы, пустые поля — подчёркивания.
-Создаёт manifest, вопросы и эталон в формате стартового пакета:
+"""Генерирует синтетические документы со случайными значениями + манифест, вопросы и эталон.
 
   python scripts/synth_generate.py --n 15 --out data/synth
   python scripts/predict.py --manifest data/synth/documents.json --questions data/synth/questions.json \
@@ -74,7 +70,7 @@ def fmt_date(d: date, style: int) -> str:
 
 
 def gen_values(doc_type: str, rng) -> tuple[dict, dict]:
-    """(значения для печати, эталон в ISO)."""
+    """Возвращает значения для печати и эталон (даты в ISO)."""
     style = rng.randrange(3)
     today = date(2026, 9, 1) + timedelta(days=rng.randrange(60))
     if doc_type == "study_certificate":

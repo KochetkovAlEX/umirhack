@@ -1,8 +1,6 @@
-"""Предобработка «плохих снимков»: перспектива, наклон, тени, блики, апскейл.
+"""Предобработка снимков: перспектива, тени, блики, наклон, апскейл.
 
-Возвращает нормализованное *цветное* изображение (цвет нужен детектору подписи
-и печати) и матрицу преобразования исходных координат -> нормализованные.
-Порядок: лист (перспектива) -> тени -> блики -> наклон -> апскейл.
+Картинку оставляем цветной, цвет нужен для подписи и печати.
 """
 from __future__ import annotations
 
@@ -17,9 +15,9 @@ from . import quality as q
 
 @dataclass
 class PreprocessResult:
-    rgb: np.ndarray                  # нормализованное цветное изображение
-    gray_for_ocr: np.ndarray         # улучшенное ч/б для OCR
-    matrix: np.ndarray               # 3x3 гомография: исходные -> нормализованные
+    rgb: np.ndarray
+    gray_for_ocr: np.ndarray
+    matrix: np.ndarray               # исходные координаты -> нормализованные
     steps: list[str] = field(default_factory=list)
     quality: dict = field(default_factory=dict)
     scale: float = 1.0
@@ -46,7 +44,7 @@ def _order_quad(pts: np.ndarray) -> np.ndarray:
 
 
 def _quad_is_page(quad: np.ndarray, h: int, w: int) -> bool:
-    """Четырёхугольник похож на лист: большая площадь, похожие противоположные стороны, разумные пропорции."""
+    """Проверка, что четырёхугольник похож на лист."""
     tl, tr, br, bl = _order_quad(quad)
     top, bottom = np.linalg.norm(tr - tl), np.linalg.norm(br - bl)
     left, right = np.linalg.norm(bl - tl), np.linalg.norm(br - tr)
@@ -83,20 +81,19 @@ def _largest_quad(mask: np.ndarray, h: int, w: int) -> np.ndarray | None:
 
 
 def _paper_score(gray: np.ndarray, quad: np.ndarray) -> float:
-    """Насколько внутри четырёхугольника «бумага»: яркость внутри минус яркость снаружи (если снаружи есть что мерить)."""
+    """Яркость внутри минус яркость снаружи."""
     h, w = gray.shape
     mask = np.zeros((h, w), np.uint8)
     cv2.fillPoly(mask, [quad.astype(np.int32)], 255)
     inside = float(gray[mask > 0].mean())
     outside_px = gray[mask == 0]
     if outside_px.size < 0.03 * h * w:
-        return inside - 128  # лист почти во весь кадр — оцениваем только яркость
+        return inside - 128  # лист почти на весь кадр, смотрим только яркость
     return inside - float(outside_px.mean())
 
 
 def find_page_quad(rgb: np.ndarray) -> np.ndarray | None:
-    """Контур листа: кандидаты по границам (устойчиво к теням) и по порогу яркости; выбирается
-    самый тесный кандидат, внутри которого действительно светлая бумага."""
+    """Ищет контур листа, берём самый маленький подходящий вариант."""
     h, w = rgb.shape[:2]
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     blur = cv2.GaussianBlur(gray, (7, 7), 0)
@@ -141,7 +138,7 @@ def warp_perspective(rgb: np.ndarray, quad: np.ndarray) -> tuple[np.ndarray, np.
 
 # ---------- наклон ----------
 def estimate_skew(gray: np.ndarray, max_angle: float) -> float:
-    """Угол наклона текстовых строк в градусах (как в atan2 в координатах изображения)."""
+    """Угол наклона строк в градусах."""
     small = gray
     if max(gray.shape) > 1500:
         k = 1500 / max(gray.shape)
@@ -180,7 +177,7 @@ def rotate_keep(rgb: np.ndarray, angle: float) -> tuple[np.ndarray, np.ndarray]:
 
 # ---------- тени / блики ----------
 def remove_shadow(rgb: np.ndarray) -> np.ndarray:
-    """Делим на оценку фона (бумаги): выравнивает освещение, сохраняет цвет чернил."""
+    """Делим на фон, чтобы выровнять освещение."""
     out = []
     for ch in cv2.split(rgb):
         bg = cv2.medianBlur(cv2.dilate(ch, np.ones((9, 9), np.uint8)), 51)
@@ -191,7 +188,7 @@ def remove_shadow(rgb: np.ndarray) -> np.ndarray:
 
 
 def soften_glare(rgb: np.ndarray) -> tuple[np.ndarray, bool]:
-    """Пересвеченные пятна (ярче бумаги) приглушаем до уровня бумаги; текст под бликом не восстанавливаем."""
+    """Приглушает блики до уровня бумаги."""
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
     v, s = hsv[:, :, 2], hsv[:, :, 1]
     paper = np.median(v[v > 150]) if (v > 150).any() else 255
@@ -208,7 +205,7 @@ def soften_glare(rgb: np.ndarray) -> tuple[np.ndarray, bool]:
 
 # ---------- шум / муар ----------
 def noise_ratio(rgb: np.ndarray) -> float:
-    """Доля «чернильных» пикселей после адаптивного порога: у чистого листа ~0.01–0.03, у муара/зерна > 0.05."""
+    """Доля тёмных пикселей после адаптивного порога (чистый лист 0.01-0.03, муар > 0.05)."""
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     if max(gray.shape) > 1600:
         k = 1600 / max(gray.shape)
@@ -243,7 +240,7 @@ def run(rgb: np.ndarray) -> PreprocessResult:
         M = _scale_matrix(k) @ M
         steps.append(f"resize x{k:.2f}")
 
-    # ориентация страницы 90/180/270° (снимки телефоном часто приходят повёрнутыми)
+    # фото с телефона часто бывают повёрнуты
     if cfg.get("enable_orientation", True):
         from .orientation import fix_orientation
 
@@ -268,8 +265,7 @@ def run(rgb: np.ndarray) -> PreprocessResult:
             if done:
                 steps.append("glare")
 
-    # муар/шум (фото экрана, зернистые снимки): фон после адаптивного порога «чернильный» -> сглаживаем,
-    # сохраняя края (bilateral), иначе OCR путает буквы и детектор печати видит кольца в шуме
+    # муар и шум (фото экрана), без этого детектор печати находит кольца в шуме
     noise = noise_ratio(rgb)
     quality["noise_ratio"] = round(noise, 4)
     if cfg.get("enable_denoise", True) and noise > cfg.get("denoise_noise_threshold", 0.05):
@@ -296,7 +292,7 @@ def run(rgb: np.ndarray) -> PreprocessResult:
 
 
 def map_bbox_back(bbox, M: np.ndarray):
-    """bbox нормализованного изображения -> 4 точки на исходном снимке."""
+    """Переводит bbox обратно в координаты исходного снимка."""
     x1, y1, x2, y2 = bbox
     pts = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]], dtype=np.float64)
     Minv = np.linalg.inv(M)

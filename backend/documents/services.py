@@ -1,4 +1,4 @@
-"""Тонкая обёртка над dekanat_core для Django: обработка, вопросы, смена типа, картинки."""
+"""Работа с dekanat_core из Django: обработка, вопросы, смена типа, картинки."""
 from __future__ import annotations
 
 import hashlib
@@ -45,7 +45,7 @@ PREVIEW_MAX_SIDE = 1400
 
 
 def _jpeg_preview(rgb: np.ndarray, max_side: int = PREVIEW_MAX_SIDE, quality: int = 82) -> bytes:
-    """Лёгкий JPEG для просмотра в браузере/Mini App (пропорции сохраняются, bbox масштабируются на клиенте)."""
+    """Уменьшенный jpeg для просмотра в браузере и Mini App."""
     img = Image.fromarray(rgb)
     img.thumbnail((max_side, max_side), Image.LANCZOS)
     buf = io.BytesIO()
@@ -68,7 +68,7 @@ def _fail(doc: UploadedDocument, message: str) -> None:
 
 
 def run_processing(doc_id, data: bytes, filename: str, doc_type: str) -> None:
-    """Собственно OCR/извлечение; выполняется в рабочем потоке или синхронно."""
+    """OCR и извлечение полей, в фоновом потоке или сразу."""
     doc = UploadedDocument.objects.get(pk=doc_id)
     try:
         result, ctx = pipeline.process_document(data, filename, None if doc_type in ("", "auto", None) else doc_type,
@@ -90,7 +90,7 @@ def run_processing(doc_id, data: bytes, filename: str, doc_type: str) -> None:
         doc.doc_type, doc.type_confidence = result.doc_type, result.type_confidence
         doc.status, doc.timings = UploadedDocument.Status.DONE, result.timings
         doc.save()
-    # вопрос/проверка, заданные вместе с загрузкой
+    # если вместе с файлом пришел вопрос или проверка
     doc = UploadedDocument.objects.select_related("result").get(pk=doc_id)
     if doc.pending_question:
         ask(doc, doc.pending_question)
@@ -110,7 +110,7 @@ def _worker(doc_id, data, filename, doc_type):
 def _submit(doc_id, data, filename, doc_type) -> None:
     from django.conf import settings
 
-    # В тестах (in-memory SQLite) отдельный поток не видит тестовую БД — выполняем в том же потоке.
+    # в тестах БД в памяти и другой поток её не видит, поэтому без потока
     if getattr(settings, "DEKANAT_INLINE_WORKERS", False):
         run_processing(doc_id, data, filename, doc_type)
         return
@@ -120,7 +120,7 @@ def _submit(doc_id, data, filename, doc_type) -> None:
 def process_upload(data: bytes, filename: str, doc_type: str = "auto", *, source: str = "web",
                    telegram_user_id: str = "", question: str = "", check: bool = False,
                    wait: bool = True) -> UploadedDocument:
-    """Создать документ и обработать: синхронно (wait=True) или в фоне (статус processing -> done/error)."""
+    """Создает документ и запускает обработку. wait=False - в фоне."""
     fmt = sniff_format(data)
     if fmt is None:
         raise ProcessingError("Поддерживаются JPG, PNG и одностраничный PDF")
@@ -165,7 +165,7 @@ def normalized_rgb(doc: UploadedDocument) -> np.ndarray:
 
 
 def ensure_previews(doc: UploadedDocument) -> None:
-    """Для документов, обработанных до появления превью, — сгенерировать их лениво."""
+    """Делает превью, если их нет (старые документы)."""
     pr = doc.result
     if pr.preview_image and pr.original_preview:
         return
@@ -185,8 +185,8 @@ def ensure_previews(doc: UploadedDocument) -> None:
 
 @transaction.atomic
 def change_type(doc: UploadedDocument, new_type: str) -> UploadedDocument:
-    """Сменить тип вручную: повторное извлечение по уже выполненному OCR (без повторного OCR)."""
-    get_doc_type(new_type)  # KeyError для неизвестного типа
+    """Ручная смена типа, OCR заново не запускаем."""
+    get_doc_type(new_type)  # кинет KeyError если тип неизвестен
     old = load_result(doc)
     ctx = pipeline.ProcessingContext()
     ctx.normalized_rgb = normalized_rgb(doc)
@@ -200,12 +200,12 @@ def change_type(doc: UploadedDocument, new_type: str) -> UploadedDocument:
     pr.save()
     doc.selected_type, doc.doc_type, doc.type_confidence = new_type, result.doc_type, 1.0
     doc.save()
-    doc.questions.all().delete()  # прежние ответы относились к другому типу
+    doc.questions.all().delete()  # старые ответы были для другого типа
     return doc
 
 
 def field_boxes(doc: UploadedDocument) -> list[dict]:
-    """bbox полей в координатах нормализованного и исходного изображения (для подсветки)."""
+    """Координаты полей на нормализованной и исходной картинке."""
     result = load_result(doc)
     M = np.asarray(doc.result.transform)
     out = []
@@ -265,7 +265,7 @@ def crop_png(doc: UploadedDocument, key: str, context: float = 0.6) -> bytes | N
 
 
 def export_json(doc: UploadedDocument, document_id: str | None = None) -> dict:
-    """Один документ в формате results.json (answers — из истории вопросов)."""
+    """Документ в формате results.json, answers берем из истории вопросов."""
     result = load_result(doc)
     return {
         "document_id": document_id or str(doc.id),

@@ -2,8 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-// Dev: Vite на :5173 проксирует /api и /media на Django (:8000).
-// Prod: `npm run build` -> dist/, который отдаёт Django (один процесс, один порт).
+// dev: vite на 5173 проксирует /api и /media на django (8000)
+// prod: npm run build -> dist/, его раздаёт django
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {

@@ -1,4 +1,4 @@
-"""Общие структуры данных ядра."""
+"""Структуры данных ядра."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -10,7 +10,7 @@ BBox = tuple[int, int, int, int]  # x1, y1, x2, y2 в пикселях норм�
 
 
 def to_jsonable(obj):
-    """Рекурсивно превратить numpy-скаляры/массивы в обычные типы Python (для JSON)."""
+    """Переводит numpy-типы в обычные питоновские (для JSON)."""
     import numpy as np
 
     if isinstance(obj, dict):
@@ -41,7 +41,7 @@ class FieldValue:
     bbox: Optional[BBox] = None     # bbox значения (или метки, если значение пустое)
     label_bbox: Optional[BBox] = None
     confidence: float = 0.0
-    found: bool = False             # True, если текстовое поле заполнено / отметка есть
+    found: bool = False             # поле заполнено или отметка есть
     kind: str = "text"              # text | mark
 
     def to_dict(self) -> dict:
@@ -97,7 +97,7 @@ class DocumentResult:
     timings: dict = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     type_candidates: list[dict] = field(default_factory=list)
-    type_mismatch: Optional[dict] = None     # {"detected", "detected_title", "score"} если выбран не тот тип
+    type_mismatch: Optional[dict] = None     # заполняется, если выбран не тот тип
 
     def fields_plain(self) -> dict[str, Any]:
         """Поля в формате results.json."""

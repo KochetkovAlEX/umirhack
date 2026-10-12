@@ -15,11 +15,11 @@ class DocumentsConfig(AppConfig):
     verbose_name = "Документы"
 
     def ready(self):
-        # Прогрев OCR-моделей в фоне, чтобы первый запрос не ждал загрузку весов.
+        # грузим OCR-модели в фоне, иначе первый запрос долго ждет
         if not settings.DEKANAT_WARMUP or "test" in sys.argv or os.environ.get("RUN_MAIN") == "false":
             return
         if "runserver" in sys.argv and os.environ.get("RUN_MAIN") != "true":
-            return  # autoreloader: родительский процесс
+            return  # это родительский процесс автоперезагрузки
 
         def _warm():
             try:

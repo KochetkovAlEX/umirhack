@@ -33,8 +33,8 @@ class UploadedDocument(models.Model):
     source = models.CharField(max_length=16, choices=Source.choices, default=Source.WEB)
     telegram_user_id = models.CharField(max_length=32, blank=True, db_index=True)
     timings = models.JSONField(default=dict, blank=True)
-    pending_question = models.TextField(blank=True)      # вопрос, заданный вместе с загрузкой (асинхронный режим)
-    pending_check = models.BooleanField(default=False)   # «проверить без вопроса» вместе с загрузкой
+    pending_question = models.TextField(blank=True)      # вопрос, который пришел вместе с файлом
+    pending_check = models.BooleanField(default=False)   # проверка без вопроса сразу после загрузки
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -50,9 +50,9 @@ class ProcessingResult(models.Model):
     document = models.OneToOneField(UploadedDocument, on_delete=models.CASCADE, related_name="result")
     result = models.JSONField(default=dict)              # DocumentResult.to_dict()
     normalized_image = models.ImageField(upload_to="uploads/", blank=True)
-    preview_image = models.ImageField(upload_to="uploads/", blank=True)          # лёгкий JPEG для просмотра
-    original_preview = models.ImageField(upload_to="uploads/", blank=True)       # лёгкий JPEG исходного снимка
-    transform = models.JSONField(default=list, blank=True)  # 3x3 матрица исходные->нормализованные
+    preview_image = models.ImageField(upload_to="uploads/", blank=True)          # маленький jpeg для просмотра
+    original_preview = models.ImageField(upload_to="uploads/", blank=True)       # маленький jpeg исходника
+    transform = models.JSONField(default=list, blank=True)  # матрица 3x3 из исходника в нормализованное
     original_size = models.JSONField(default=list, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 

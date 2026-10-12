@@ -1,4 +1,4 @@
-"""Настройки Django для веб-сервиса «Онлайн-деканат»."""
+"""Настройки Django для проекта Онлайн-деканат."""
 from __future__ import annotations
 
 import os
@@ -97,9 +97,9 @@ SPECTACULAR_SETTINGS = {
     "DISABLE_ERRORS_AND_WARNINGS": True,
 }
 
-# Прогрев OCR-моделей при старте (0 — отключить, удобно для тестов)
+# прогрев OCR при старте, 0 - выключить (для тестов)
 DEKANAT_WARMUP = os.environ.get("DEKANAT_WARMUP", "1") == "1"
-# Токен для служебных операций (очистка), не обязателен
+# токен для служебных операций (очистка), можно не задавать
 DEKANAT_ADMIN_TOKEN = os.environ.get("DEKANAT_ADMIN_TOKEN", "")
 
 LOGGING = {

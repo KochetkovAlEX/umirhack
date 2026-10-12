@@ -1,10 +1,6 @@
-"""PaddleOCR (PP-OCRv5: детектор текста + русская модель распознавания).
+"""PaddleOCR через модели paddlex напрямую (детектор + кириллическая модель распознавания).
 
-Используются модели paddlex напрямую (а не высокоуровневый класс PaddleOCR):
-это даёт контроль над режимом исполнения (на Windows детектор падает в
-oneDNN-режиме с PIR, поэтому для него выбирается run_mode=paddle) и позволяет
-батчить распознавание строк. Модели: PP-OCRv5_mobile_det, eslav_PP-OCRv5_mobile_rec
-(кириллица). Веса скачиваются автоматически в ~/.paddlex/official_models.
+Класс PaddleOCR не используем, т.к. на Windows детектору нужен run_mode=paddle.
 """
 from __future__ import annotations
 
@@ -33,7 +29,7 @@ def _order_points(pts: np.ndarray) -> np.ndarray:
 
 
 def crop_poly(img: np.ndarray, poly) -> np.ndarray:
-    """Вырезать (с выравниванием) четырёхугольник текстовой строки."""
+    """Вырезает строку текста по четырёхугольнику."""
     pts = np.array(poly, dtype=np.float32).reshape(-1, 2)
     if len(pts) != 4:
         x1, y1 = pts.min(axis=0)
@@ -74,7 +70,7 @@ class PaddleEngine(OcrEngine):
                 device = "gpu" if cfg.get("use_gpu") else "cpu"
                 det_engine = {"cpu_threads": threads}
                 if device == "cpu":
-                    # oneDNN + PIR на Windows падает для детектора -> обычный режим
+                    # на Windows детектор падает с oneDNN + PIR
                     det_engine.update(run_mode="paddle", enable_new_ir=False)
                 self._det = create_model(model_name=cfg.get("paddle_det_model", DET_MODEL), device=device,
                                          engine_config=det_engine)

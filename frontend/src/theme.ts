@@ -1,5 +1,5 @@
-// Светлая/тёмная тема: data-theme на <html>, выбор хранится в localStorage,
-// по умолчанию — системная настройка prefers-color-scheme; внутри Telegram — тема клиента.
+// тема: data-theme на <html>, выбор хранится в localStorage
+// по умолчанию берём prefers-color-scheme, в Telegram тему клиента
 import { tgInit, tgSyncChrome, tgTheme } from './telegram'
 
 export type Theme = 'light' | 'dark'

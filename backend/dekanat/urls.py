@@ -15,5 +15,5 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# Собранный React-фронтенд (frontend/dist) отдаётся Django: один процесс, один порт.
+# собранный фронт (frontend/dist) отдает сам Django, чтобы всё было на одном порту
 urlpatterns += [re_path(r"^(?!api/|admin/|media/|static/|assets/).*$", SpaView.as_view(), name="spa")]

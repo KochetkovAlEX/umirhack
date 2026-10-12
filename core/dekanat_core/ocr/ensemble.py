@@ -1,4 +1,4 @@
-"""Выбор/объединение движков: primary (PaddleOCR) + fallback (Tesseract)."""
+"""Основной движок PaddleOCR, запасной Tesseract."""
 from __future__ import annotations
 
 import logging
@@ -26,7 +26,7 @@ def get_engine(name: str) -> OcrEngine:
 
 
 def _label_hit_ratio(lines: list[OcrLine], expected_labels) -> float:
-    """Доля найденных меток; expected_labels — список меток или список списков (по типам) -> максимум."""
+    """Доля найденных меток (для списка списков берём максимум)."""
     if not expected_labels:
         return 1.0
     if expected_labels and isinstance(expected_labels[0], (list, tuple)):
@@ -52,7 +52,7 @@ def _iou(a, b) -> float:
 
 
 def merge(primary: list[OcrLine], secondary: list[OcrLine]) -> list[OcrLine]:
-    """Добавить к primary строки secondary, которых там нет (по IoU)."""
+    """Добавляет из secondary строки, которых нет в primary."""
     out = list(primary)
     for s in secondary:
         if any(_iou(s.bbox, p.bbox) > 0.3 for p in primary):

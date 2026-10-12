@@ -1,4 +1,4 @@
-"""Схема конфигурации типов документов (бонус «новый тип без кода»)."""
+"""Схема конфига типов документов."""
 from __future__ import annotations
 
 from functools import lru_cache
@@ -113,7 +113,7 @@ def load_doc_type(path: Path) -> DocTypeConfig:
         raw = yaml.safe_load(fh)
     try:
         return DocTypeConfig.model_validate(raw)
-    except Exception as exc:  # pragma: no cover - понятная ошибка для авторов конфигов
+    except Exception as exc:  # pragma: no cover
         raise ValueError(f"Ошибка в конфиге типа документа {path.name}: {exc}") from exc
 
 

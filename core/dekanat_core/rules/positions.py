@@ -1,4 +1,4 @@
-"""Парсер Положения (rules.md) в словарь пунктов {"3.1": "текст"}."""
+"""Парсит rules.md в словарь {"3.1": "текст"}."""
 from __future__ import annotations
 
 import re

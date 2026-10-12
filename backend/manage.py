@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Django management for «Онлайн-деканат»."""
+"""manage.py для проекта Онлайн-деканат."""
 import os
 import sys
 from pathlib import Path

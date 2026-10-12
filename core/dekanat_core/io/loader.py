@@ -11,7 +11,7 @@ from PIL import Image, ImageOps
 
 from ..settings import get_settings
 
-Image.MAX_IMAGE_PIXELS = 80_000_000  # защита от «пиксельных бомб»
+Image.MAX_IMAGE_PIXELS = 80_000_000  # защита от слишком больших картинок
 
 
 class UnsupportedFileError(ValueError):

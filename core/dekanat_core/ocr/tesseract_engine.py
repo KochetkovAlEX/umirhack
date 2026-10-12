@@ -1,4 +1,4 @@
-"""Tesseract 5 (rus+eng) — резервный движок и участник ансамбля."""
+"""Tesseract (rus+eng), запасной движок."""
 from __future__ import annotations
 
 import logging
@@ -63,7 +63,7 @@ class TesseractEngine(OcrEngine):
             data = pytesseract.image_to_data(rgb, lang=lang, config="--psm 6", output_type=Output.DICT)
         except pytesseract.TesseractError:
             data = pytesseract.image_to_data(rgb, lang="eng", config="--psm 6", output_type=Output.DICT)
-        # группируем слова в строки по (block, par, line)
+        # собираем слова в строки
         groups: dict[tuple, list] = {}
         for i, word in enumerate(data["text"]):
             if not str(word).strip():

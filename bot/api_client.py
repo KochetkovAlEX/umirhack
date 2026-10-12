@@ -1,4 +1,4 @@
-"""HTTP-клиент к Django API. Бот не делает OCR и не формирует ответы сам — только транспорт."""
+"""Запросы бота к Django API. Вся обработка на бэкенде."""
 from __future__ import annotations
 
 import os
@@ -8,7 +8,7 @@ import httpx
 
 API_BASE = os.environ.get("API_BASE_URL", "http://localhost:8000").rstrip("/") + "/api/v1"
 TIMEOUT = httpx.Timeout(120.0, connect=10.0)
-# trust_env=False: не использовать системный прокси Windows (VPN-клиенты перехватывают даже 127.0.0.1)
+# trust_env=False, чтобы не лезть через системный прокси (VPN на винде перехватывает даже 127.0.0.1)
 
 
 class ApiError(Exception):

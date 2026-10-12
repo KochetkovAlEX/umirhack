@@ -59,7 +59,7 @@ class DocumentListCreateView(APIView):
         data = f.read()
         q = (ser.validated_data.get("question") or "").strip()
         check = bool(ser.validated_data.get("check"))
-        # async=1: ответить сразу (202, status=processing), обработка в фоне — для медленных каналов/туннелей
+        # async=1: сразу отдаем 202, обработка идет в фоне (нужно для туннеля)
         wait = str(request.data.get("async", "")).lower() not in ("1", "true", "yes")
         try:
             doc = services.process_upload(data, f.name, ser.validated_data.get("doc_type") or "auto",
@@ -191,7 +191,7 @@ class ExportView(APIView):
 
 
 class SpaView(View):
-    """Отдаёт index.html собранного React-приложения."""
+    """Отдает index.html фронта."""
 
     def get(self, request, *args, **kwargs):
         index = settings.FRONTEND_DIST / "index.html"

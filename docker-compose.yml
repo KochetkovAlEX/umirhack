@@ -26,7 +26,7 @@ services:
       API_BASE_URL: http://backend:8000
       WEBAPP_URL: ${WEBAPP_URL:-}            # адрес Mini App из .env (если задаётся вручную)
     volumes:
-      - ./scripts/dev:/app/scripts/dev:ro    # webapp_url.txt от tunnel_keeper: бот подхватывает новый адрес без перезапуска
+      - ./runtime:/app/runtime:ro    # сюда tunnel_keeper пишет webapp_url.txt, бот берёт адрес без перезапуска
     depends_on:
       backend:
         condition: service_healthy

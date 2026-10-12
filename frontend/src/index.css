@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
-/* Палитра в стиле Банка «Центр-инвест»: фирменный зелёный, тёплый жёлто-оранжевый акцент,
-   нейтральные серые фоны, шрифт Inter. */
+/* цвета под сайт банка Центр-инвест: зелёный, жёлто-оранжевый акцент, серые фоны, шрифт Inter */
 @theme {
   --color-brand-50: #f0f7f0;
   --color-brand-100: #e0efe0;
@@ -36,7 +35,7 @@
   --color-ink-900: #232323;
 
   --color-surface: #ffffff;
-  /* серые скруглённые плашки на белом фоне, как блоки на сайте банка */
+  /* серые скруглённые плашки на белом фоне */
   --color-panel: #f4f5f7;
 
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
@@ -50,7 +49,7 @@
   --hero-to: #ebeced;
 }
 
-/* Тёмная тема: переопределяем палитру — компоненты используют те же токены. */
+/* тёмная тема: те же токены, другие цвета */
 :root[data-theme="dark"] {
   color-scheme: dark;
   --paper: #111316;
@@ -128,7 +127,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
   .btn-lg { @apply h-14 px-10 text-lg; }
   .chip { @apply inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium; }
   .input { @apply w-full rounded-xl border border-ink-300 bg-surface px-3.5 py-3 text-[15px] text-ink-800 outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-500; }
-  /* вкладки в верхнем регистре, как «Популярные / Вклад / Промо» */
+  /* вкладки капсом */
   .tab-upper { @apply relative pb-3 text-[15px] sm:text-[17px] uppercase tracking-wide whitespace-nowrap transition text-ink-500 hover:text-ink-900; }
   .tab-upper[aria-selected="true"] { @apply text-ink-900; }
   .tab-upper[aria-selected="true"]::after { content: ""; @apply absolute left-0 right-0 bottom-0 h-[3px] rounded-full bg-brand-500; }
@@ -140,7 +139,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 @keyframes pulse-ring { 0% { opacity: .9 } 50% { opacity: .35 } 100% { opacity: .9 } }
 .box-highlight { animation: pulse-ring 1.2s ease-in-out infinite; }
 
-/* Внутри Telegram Mini App: компактная шапка, нижний отступ под системные кнопки */
+/* в Telegram: шапка поменьше и отступ снизу под системные кнопки */
 :root[data-tg="1"] .tg-hide { display: none; }
 :root[data-tg="1"] main { padding-bottom: 2.5rem; }
 

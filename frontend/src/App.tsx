@@ -9,7 +9,7 @@ import DocumentPage from './pages/DocumentPage'
 import RulesPage from './pages/RulesPage'
 import AboutPage from './pages/AboutPage'
 
-// верхняя строка шапки: разделы в верхнем регистре, как «Частным лицам / Бизнесу»
+// верхняя строка шапки с разделами
 const topNavCls = ({ isActive }: { isActive: boolean }) =>
   `shrink-0 text-[15px] uppercase tracking-wide transition ${isActive ? 'text-ink-900' : 'text-ink-600 hover:text-ink-900'}`
 
@@ -65,7 +65,7 @@ function ThemeToggle() {
   )
 }
 
-/** Вторая строка шапки: быстрый выбор типа документа (ведёт к форме с предвыбранным типом). */
+// вторая строка шапки: быстрый выбор типа документа
 function SubNav() {
   const types = useQuery({ queryKey: ['doc-types'], queryFn: api.docTypes })
   const { pathname } = useLocation()
@@ -92,7 +92,7 @@ function SubNav() {
   )
 }
 
-/** Прокрутка к якорю (#upload, #ask) после перехода; пункты Положения прокручивает сама RulesPage. */
+// прокрутка к якорю (#upload, #ask) после перехода, пункты Положения крутит сама RulesPage
 function ScrollToHash() {
   const { pathname, hash } = useLocation()
   const prevPath = useRef(pathname)
@@ -100,7 +100,7 @@ function ScrollToHash() {
     const pathChanged = prevPath.current !== pathname
     prevPath.current = pathname
     if (!hash || hash.startsWith('#rule-')) {
-      // наверх — только при смене страницы, не при смене ?type= на главной
+      // наверх только при смене страницы, не при смене ?type=
       if (!hash && pathChanged) window.scrollTo({ top: 0 })
       return
     }
@@ -140,7 +140,7 @@ export default function App() {
             Проверить документ
           </Link>
         </div>
-        {/* на телефоне разделы — отдельной строкой, иначе не помещаются рядом с логотипом */}
+        {/* на телефоне разделы отдельной строкой, иначе не влезают */}
         <nav className="sm:hidden border-t border-ink-200">
           <div className="container-x h-12 flex items-center gap-6 overflow-x-auto no-scrollbar">
             <TopNavLinks />
@@ -158,7 +158,7 @@ export default function App() {
         </Routes>
       </main>
 
-      {/* плавающая кнопка «задать вопрос», как кнопка чата на сайте банка */}
+      {/* плавающая кнопка для вопроса */}
       <Link
         to={pathname.startsWith('/d/') ? '#ask' : '/#ask'}
         className="tg-hide fixed bottom-6 right-6 z-30 hidden sm:inline-flex h-16 w-16 items-center justify-center rounded-full bg-surface text-brand-500 shadow-[0_8px_28px_rgba(35,35,35,0.14)] hover:scale-105 transition"

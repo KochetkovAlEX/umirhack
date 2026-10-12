@@ -1,7 +1,7 @@
-# Публичный HTTPS-туннель к локальному бэкенду для Telegram Mini App.
-# Использование:  .\scripts\tunnel.ps1            (localhost.run через ssh, без регистрации)
-#                 .\scripts\tunnel.ps1 -Cloudflare (cloudflared quick tunnel; не работает, если VPN блокирует DNS argotunnel.com)
-# Полученный адрес запишите в .env: WEBAPP_URL=https://... и перезапустите бота (python -m bot).
+# HTTPS-туннель к бэкенду для Mini App.
+# .\scripts\tunnel.ps1             - localhost.run через ssh
+# .\scripts\tunnel.ps1 -Cloudflare - cloudflared (с VPN может не работать)
+# адрес потом прописать в .env как WEBAPP_URL и перезапустить бота
 param([switch]$Cloudflare, [int]$Port = 8000)
 if ($Cloudflare) {
   & "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel --url "http://127.0.0.1:$Port" --no-autoupdate

@@ -1,7 +1,7 @@
-"""Детерминированный разбор вопроса студента (без LLM).
+"""Разбор вопроса студента по правилам.
 
 Порядок: decision -> completeness -> field -> faq -> not_established -> no_info.
-По умолчанию — честный отказ (п. 2.4, 6.3), а не угадывание.
+Если ничего не подошло, отказываем (п. 2.4, 6.3).
 """
 from __future__ import annotations
 
@@ -53,12 +53,9 @@ def _any_pattern(q: str, patterns: list[str], threshold: int = 88) -> float:
 
 
 _QUOTED_RE = re.compile(r'"([^"]{2,60})"')
-_FIELD_PHRASES = ("значение поля", "укажи поле", "поле ", "какое значение", "что указано в поле", "что написано в поле")
-# темы, которых нет ни в документе, ни в Положении: при их наличии поле засчитывается
-# только если его название присутствует в вопросе буквально
-_FOREIGN_TOPICS = ("стипенд", "стоимост", "цена", "оплат", "платн", "телефон", "кабинет", "адрес", "срок рассмотр",
-                   "сколько дней", "режим работы", "часы работы", "общежит", "почт", "email", "e-mail", "сайт",
-                   "расписан", "пересдач", "диплом", "отчисл", "восстанов", "льгот", "скидк")
+_FIELD_PHRASES = tuple(load_intents().get("field_phrases", []))
+# темы, которых нет ни в документе, ни в Положении (тогда поле ищем только по точному названию)
+_FOREIGN_TOPICS = tuple(load_intents().get("foreign_topics", []))
 
 
 def _tokens(s: str) -> list[str]:
@@ -66,7 +63,7 @@ def _tokens(s: str) -> list[str]:
 
 
 def _token_match(a: str, qt: list[str]) -> bool:
-    """Токен синонима найден в вопросе (точно, по основе или с опечаткой)."""
+    """Есть ли синоним в вопросе (точно, по основе или с опечаткой)."""
     if len(a) <= 3:
         return a in qt
     stem = a[: max(4, len(a) - 2)]
@@ -93,7 +90,7 @@ def _name_score(name: str, q: str, qt: list[str]) -> float:
 
 
 def _match_field(q: str, cfg: DocTypeConfig, threshold: int) -> tuple[Optional[FieldSpec], float]:
-    """Найти поле по кавычкам или по синонимам (без нечёткого поиска по подстроке)."""
+    """Ищет поле по кавычкам или синонимам."""
     quoted = _QUOTED_RE.findall(q)
     best: tuple[Optional[FieldSpec], float] = (None, 0.0)
     if quoted:
@@ -115,7 +112,7 @@ def _match_field(q: str, cfg: DocTypeConfig, threshold: int) -> tuple[Optional[F
                 continue
             if foreign and s < 100.0:
                 continue
-            # более длинные названия предпочтительнее (дата начала vs дата окончания)
+            # длинные названия в приоритете (дата начала / дата окончания)
             s_adj = s + min(8, len(name) / 6)
             if s_adj > best[1]:
                 best = (spec, s_adj)
@@ -128,31 +125,30 @@ def classify_question(question: str, cfg: DocTypeConfig) -> Intent:
     q = normalize_question(question)
     intents = load_intents()
 
-    # 1. Кто принимает решение
+    # 1. кто принимает решение
     s = _any_pattern(q, intents.get("decision", {}).get("patterns", []))
     if s >= 88:
         return Intent("decision", score=s)
 
-    # 2. Комплектность — но не перепутать с вопросом о конкретном поле в кавычках
+    # 2. комплектность, но не вопрос про поле в кавычках
     quoted = _QUOTED_RE.findall(q)
     s_c = _any_pattern(q, intents.get("completeness", {}).get("patterns", []))
     if s_c >= 88 and not quoted:
-        # «достаточно ли причины отпуска» — это FAQ 4.4, проверим ниже
+        # "достаточно ли причины отпуска" это FAQ 4.4, проверяется ниже
         faq = _match_faq(q, intents.get("faq", []), cfg)
         if faq and faq[0].get("id") == "leave_reason_enough":
             return Intent("faq", faq=faq[0], score=faq[1])
         return Intent("completeness", score=s_c)
 
-    # 2b. FAQ с буквальным совпадением формулировки имеет приоритет над полем
-    #     («проверяется ли подлинность подписи» — это п. 2.3, а не вопрос о поле подписи)
+    # 2b. FAQ с точным совпадением важнее поля (например "проверяется ли подлинность подписи" это п. 2.3)
     faq_lit = _match_faq(q, intents.get("faq", []), cfg)
     if faq_lit and faq_lit[1] >= 100 and not quoted:
         return Intent("faq", faq=faq_lit[0], score=faq_lit[1])
 
-    # 3. Поле
+    # 3. поле
     spec, s_f = _match_field(q, cfg, thr)
     if spec is not None and (quoted or any(p in q for p in _FIELD_PHRASES) or s_f >= thr):
-        # вопрос про отметку, которой у типа нет («печать» у заявления)
+        # вопрос про отметку, которой у типа нет (печать у заявления)
         return Intent("field", field_key=spec.key, score=s_f)
     # поле-отметка, отсутствующее у типа (печать у заявления)
     for mark, rule in cfg.not_required.items():
@@ -166,7 +162,7 @@ def classify_question(question: str, cfg: DocTypeConfig) -> Intent:
     if faq:
         return Intent("faq", faq=faq[0], score=faq[1])
 
-    # 5. Явно не установлено Положением
+    # 5. не установлено Положением
     for item in intents.get("not_established", []):
         s = _any_pattern(q, item.get("patterns", []), threshold=85)
         if s >= 85:

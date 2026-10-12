@@ -12,7 +12,7 @@ class OcrEngine(ABC):
 
     @abstractmethod
     def recognize(self, rgb: np.ndarray) -> list[OcrLine]:
-        """Распознать текст. bbox — в координатах переданного изображения."""
+        """Распознаёт текст, bbox в координатах этой картинки."""
 
     def available(self) -> bool:
         return True

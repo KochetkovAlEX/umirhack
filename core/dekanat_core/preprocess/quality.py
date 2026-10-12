@@ -1,4 +1,4 @@
-"""Оценка качества снимка — управляет выбором шагов предобработки."""
+"""Оценка качества снимка, от неё зависят шаги предобработки."""
 from __future__ import annotations
 
 import cv2
@@ -13,10 +13,10 @@ def assess(rgb: np.ndarray) -> dict:
     std = float(gray.std())
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
     glare_ratio = float(((hsv[:, :, 2] > 245) & (hsv[:, :, 1] < 25)).mean())
-    # неравномерность освещения: разброс яркости фона по блокам
+    # неравномерность освещения
     small = cv2.resize(gray, (16, 16), interpolation=cv2.INTER_AREA)
     bg_unevenness = float(np.percentile(small, 90) - np.percentile(small, 10))
-    # доля «бумаги» (светлых пикселей) — у сканов ~0.9, у фото листа на столе меньше
+    # доля светлых пикселей, у сканов около 0.9, у фото меньше
     paper_ratio = float((gray > 180).mean())
     return {
         "width": int(w),

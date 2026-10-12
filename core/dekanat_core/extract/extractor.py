@@ -18,7 +18,7 @@ _LAT2CYR_LOWER = str.maketrans({"a": "а", "b": "в", "c": "с", "e": "е", "h":
 
 def _norm_label(s: str) -> str:
     s = s.lower().replace("ё", "е")
-    # OCR часто читает короткие кириллические метки латиницей («Kypc») — приводим к кириллице
+    # OCR часто читает короткие метки латиницей (Kypc), переводим в кириллицу
     if re.search(r"[а-я]", s) or len(s) <= 6:
         s = s.translate(_LAT2CYR_LOWER)
     s = re.sub(r"[^a-zа-я0-9 ]+", " ", s)
@@ -30,16 +30,15 @@ def _label_score(candidate: str, spec: FieldSpec) -> float:
     if not c:
         return 0.0
     target = _norm_label(spec.label)
-    # основная метка: ratio + token_set, ключевые слова метки должны присутствовать
     score = max(fuzz.ratio(c, target), fuzz.token_set_ratio(c, target))
-    # штраф за сильно отличающуюся длину (например, «Дата начала отпуска» vs «Дата окончания отпуска»)
+    # штраф за разную длину, чтобы не путать "Дата начала отпуска" и "Дата окончания отпуска"
     if abs(len(c) - len(target)) > max(4, 0.4 * len(target)):
         score -= 15
     return score
 
 
 def _split_by_label_prefix(ln: TextLine, cfg: DocTypeConfig, threshold: int):
-    """Строка без двоеточия: если начало строки похоже на метку поля — остаток считаем значением."""
+    """Строка без двоеточия: если начало похоже на метку, остаток считаем значением."""
     text = ln.text.strip()
     words = text.split()
     best = None
@@ -58,7 +57,7 @@ def _split_by_label_prefix(ln: TextLine, cfg: DocTypeConfig, threshold: int):
     k = best[1]
     label = " ".join(words[:k])
     value = " ".join(words[k:])
-    # bbox значения: доля ширины строки по символам
+    # bbox значения по доле символов
     x1, y1, x2, y2 = ln.bbox
     frac = (len(label) + 1) / max(1, len(text))
     xs = x1 + int((x2 - x1) * min(0.95, frac))
@@ -74,11 +73,11 @@ def extract_text_fields(cfg: DocTypeConfig, lines: list[TextLine]) -> dict[str, 
     for ln in lines:
         label, value, lb, vb = split_label_value(ln)
         if not value:
-            # двоеточие потеряно OCR («Надание вуза Учебный университет …»): ищем метку как префикс строки
+            # OCR потерял двоеточие, ищем метку в начале строки
             label, value, lb, vb = _split_by_label_prefix(ln, cfg, threshold) or (label, value, lb, vb)
         parsed.append((ln, label, value, lb, vb))
 
-    # матрица оценок поле x строка, жадное назначение (лучшие совпадения первыми)
+    # оценки поле x строка, сначала берем лучшие совпадения
     scored: list[tuple[float, int, int]] = []
     for fi, spec in enumerate(cfg.text_fields):
         for li, (ln, label, value, lb, vb) in enumerate(parsed):
@@ -118,7 +117,7 @@ def extract_text_fields(cfg: DocTypeConfig, lines: list[TextLine]) -> dict[str, 
 
 
 def find_anchor_line(lines: list[TextLine], anchor: str, threshold: int = 80) -> TextLine | None:
-    """Найти строку, содержащую якорную надпись (например «Подпись студента»)."""
+    """Ищет строку с якорной надписью (например "Подпись студента")."""
     a = _norm_label(anchor)
     best, best_s = None, 0
     for ln in lines:
@@ -130,7 +129,7 @@ def find_anchor_line(lines: list[TextLine], anchor: str, threshold: int = 80) ->
 
 
 def anchor_bbox(line: TextLine, anchor: str):
-    """bbox именно якорной надписи внутри строки (строка могла склеиться с росчерком/печатью)."""
+    """bbox самой надписи внутри строки (строка могла склеиться с подписью или печатью)."""
     a = _norm_label(anchor)
     best, best_s = None, 0
     for part in line.parts:

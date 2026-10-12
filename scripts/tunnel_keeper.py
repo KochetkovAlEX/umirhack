@@ -1,12 +1,5 @@
 #!/usr/bin/env python
-"""Держит публичный HTTPS-туннель к локальному бэкенду для Telegram Mini App и
-автоматически обновляет адрес при переподключении.
-
-- запускает `ssh -R 80:127.0.0.1:<port> nokey@localhost.run` и перезапускает его при обрыве;
-- вытаскивает адрес https://xxxx.lhr.life из вывода;
-- пишет его в .env (WEBAPP_URL=...) и в scripts/dev/webapp_url.txt (бот читает файл при каждом
-  построении клавиатуры, перезапуск не нужен);
-- выставляет кнопку меню бота (setChatMenuButton) на новый адрес.
+"""Держит ssh-туннель для Mini App и обновляет адрес в .env, runtime/webapp_url.txt и в боте.
 
   python scripts/tunnel_keeper.py [--port 8000]
 """
@@ -24,11 +17,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV = ROOT / ".env"
-URL_FILE = ROOT / "scripts" / "dev" / "webapp_url.txt"
+URL_FILE = ROOT / "runtime" / "webapp_url.txt"
 PROVIDERS = {
-    # имя: (аргументы ssh, регулярное выражение публичного адреса)
+    # имя: (аргументы ssh, регулярка для адреса)
     "localhost.run": (["-R", "80:127.0.0.1:{port}", "nokey@localhost.run"], r"https://[a-z0-9]+\.lhr\.life"),
-    # serveo: без ограничений по времени, но на бесплатном тарифе показывает страницу «Continue to Site» один раз
+    # serveo без лимита по времени, но один раз показывает страницу Continue to Site
     "serveo": (["-R", "80:127.0.0.1:{port}", "serveo.net"], r"https://[a-z0-9-]+\.serveousercontent\.com"),
 }
 
@@ -72,7 +65,7 @@ def set_menu_button(url: str) -> None:
 
 
 def known_chats() -> list[int]:
-    """Чаты, которые пользовались ботом (telegram_user_id из БД бэкенда)."""
+    """Id пользователей бота из базы бэкенда."""
     db = ROOT / "backend" / "db.sqlite3"
     if not db.exists():
         return []
@@ -87,7 +80,7 @@ def known_chats() -> list[int]:
 
 
 def notify_chats(url: str, previous: str) -> None:
-    """Прислать свежую клавиатуру: кнопка web_app в старой клавиатуре хранит прежний адрес."""
+    """Шлем новую клавиатуру, в старой кнопка ведет на старый адрес."""
     token = read_env("BOT_TOKEN")
     if not token:
         return
@@ -126,7 +119,7 @@ def publish(url: str, previous: str = "") -> None:
 def run(port: int, provider: str = "localhost.run", name: str = "") -> None:
     args, pattern = PROVIDERS[provider]
     if name and provider == "serveo":
-        # постоянное имя (SSH-ключ должен быть зарегистрирован на console.serveo.net)
+        # постоянное имя, нужен ssh-ключ на console.serveo.net
         args = [a.replace("80:127.0.0.1", f"{name}:80:127.0.0.1") for a in args]
     url_re = re.compile(pattern)
     cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=3",

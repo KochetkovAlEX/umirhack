@@ -22,7 +22,7 @@ export default function DocumentPage() {
   const [history, setHistory] = useState<QA[]>([])
   const [variant, setVariant] = useState<'normalized' | 'original'>('normalized')
 
-  // пока документ обрабатывается в фоне — опрашиваем статус
+  // пока документ обрабатывается, опрашиваем статус
   const doc = useQuery({
     queryKey: ['doc', id],
     queryFn: () => api.get(id),

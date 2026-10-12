@@ -1,4 +1,4 @@
-"""Загрузка config/settings.yaml с возможностью переопределения через окружение."""
+"""Загрузка config/settings.yaml, можно переопределить через env."""
 from __future__ import annotations
 
 import os

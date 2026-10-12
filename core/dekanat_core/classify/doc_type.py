@@ -1,4 +1,4 @@
-"""Автоопределение типа документа по тексту OCR (бонус)."""
+"""Определение типа документа по тексту OCR."""
 from __future__ import annotations
 
 import re
@@ -34,12 +34,12 @@ def score_type(cfg: DocTypeConfig, lines: list[TextLine]) -> float:
 
 
 def classify(lines: list[TextLine]) -> tuple[str, float, list[dict]]:
-    """Вернуть (ключ типа, уверенность 0..1, список кандидатов)."""
+    """Возвращает (тип, уверенность 0..1, кандидаты)."""
     types = load_doc_types()
     scores = {k: score_type(cfg, lines) for k, cfg in types.items()}
     ranked = sorted(scores.items(), key=lambda kv: -kv[1])
     best_key, best = ranked[0]
     second = ranked[1][1] if len(ranked) > 1 else 0.0
-    # уверенность: сам скор и отрыв от второго
+    # учитываем скор и отрыв от второго места
     conf = min(1.0, best * (0.5 + 0.5 * min(1.0, (best - second) / 0.25))) if best > 0 else 0.0
     return best_key, round(conf, 3), [{"key": k, "title": types[k].title, "score": s} for k, s in ranked]

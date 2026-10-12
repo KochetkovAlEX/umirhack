@@ -8,18 +8,22 @@ backend/db.sqlite3
 backend/static/frontend/
 .env
 *.egg-info/
-.pytest_cache/
-.ruff_cache/
-report.json
-bench_out/
 models/
+runtime/
+*.log
+scripts/dev/
+
+# фото и сканы
+*.png
+*.jpg
+*.jpeg
+!frontend/public/*.png
+
+# синтетические данные
 data/synth/
-bench_out/
-bench_report.json
-results_open_*.json
-results_synth.json
-scripts/dev/*.txt
-scripts/dev/*.png
-scripts/dev/*.json
-scripts/dev/*.log
-scripts/dev/webapp_url.txt
+data/demo/
+
+# результаты прогонов и бенчмарков
+/results*.json
+/bench*.json
+/bench_out/
